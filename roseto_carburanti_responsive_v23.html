@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roseto Carburanti — Gestionale</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#fff;--bg2:#f4f6f9;--bg3:#eaecf0;
+  --border:#dde1e7;--text:#1a1d23;--text2:#5a6070;--text3:#9099aa;
+  --r:8px;--rl:12px;
+  --blue:#185FA5;--blt:#E6F1FB;
+  --green:#0F6E56;--glt:#E1F5EE;
+  --red:#A32D2D;--rlt:#FCEBEB;
+  --orange:#854F0B;--olt:#FAEEDA;
+  --purple:#533AB7;--plt:#EEEDFE;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg2);color:var(--text);min-height:100vh;}
+
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:220px;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sb-logo{padding:16px 14px 12px;border-bottom:1px solid var(--border);}
+.sb-logo h2{font-size:13px;font-weight:700;color:var(--text);line-height:1.4;}
+.sb-logo p{font-size:10px;color:var(--text3);margin-top:3px;}
+.sb-nav{flex:1;padding:10px 8px;overflow-y:auto;}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:var(--font);}
+.ni:hover{background:var(--bg2);color:var(--text);}
+.ni.active{background:var(--blt);color:var(--blue);font-weight:600;}
+.ni i{font-size:17px;width:20px;flex-shrink:0;}
+.sb-foot{padding:10px 8px;border-top:1px solid var(--border);}
+.main{margin-left:220px;padding:24px;max-width:1080px;}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
+.ptitle{font-size:20px;font-weight:700;}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:14px;}
+
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.ff{grid-column:1/-1;}
+.g{display:flex;flex-direction:column;gap:5px;}
+label{font-size:12px;font-weight:600;color:var(--text2);}
+input,select,textarea{padding:8px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:var(--font);width:100%;transition:border .15s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);}
+textarea{resize:vertical;min-height:52px;}
+.sep{grid-column:1/-1;border-top:1px solid var(--border);padding-top:4px;margin-top:4px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+
+.btn{padding:8px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;font-family:var(--font);font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .15s;}
+.btn:hover{background:var(--bg2);}
+.btn:active{transform:scale(.98);}
+.bp{background:var(--blue);color:#fff;border-color:var(--blue);}.bp:hover{background:#0C447C;}
+.bpdf{background:var(--red);color:#fff;border-color:var(--red);}.bpdf:hover{background:#791F1F;}
+.bxml{background:var(--purple);color:#fff;border-color:var(--purple);}.bxml:hover{background:#3C3489;}
+.bgreen{background:var(--green);color:#fff;border-color:var(--green);}.bgreen:hover{background:#085041;}
+.bwarn{background:var(--orange);color:#fff;border-color:var(--orange);}.bwarn:hover{background:#633806;}
+.bdng{color:var(--red);border-color:transparent;}.bdng:hover{background:var(--rlt);}
+.bsm{padding:5px 10px;font-size:11px;}
+.ar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap;}
+
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.met{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;}
+.met-l{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;text-transform:uppercase;}
+.met-v{font-size:20px;font-weight:700;}
+
+.dt{width:100%;border-collapse:collapse;}
+.dt th{font-size:11px;color:var(--text3);font-weight:700;text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);text-transform:uppercase;letter-spacing:.04em;}
+.dt td{padding:9px 10px;font-size:13px;border-bottom:1px solid var(--border);}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--bg2);}
+.tdr{text-align:right;}.tdact{text-align:right;white-space:nowrap;}
+
+.badge{display:inline-block;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;}
+.bg-g{background:var(--glt);color:var(--green);}
+.bg-b{background:var(--olt);color:var(--orange);}
+.bg-a{background:var(--blt);color:var(--blue);}
+.bg-x{background:var(--plt);color:var(--purple);}
+.bg-em{background:var(--glt);color:var(--green);}
+.bg-bz{background:var(--olt);color:var(--orange);}
+.numr{font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 7px;border-radius:99px;border:1px solid var(--border);}
+
+.acc{border:1px solid var(--border);border-radius:var(--rl);margin-bottom:10px;overflow:hidden;}
+.acc-hdr{padding:11px 14px;background:var(--bg2);display:flex;align-items:center;justify-content:space-between;cursor:pointer;flex-wrap:wrap;gap:6px;}
+.acc-hdr:hover{background:var(--bg3);}
+.acc-name{font-size:14px;font-weight:600;}
+.acc-meta{display:flex;gap:12px;font-size:12px;color:var(--text2);}
+.acc-body{padding:12px;display:none;}
+.acc-body.open{display:block;}
+
+/* ── PREZZO LITRO PANEL ── */
+.plt-panel{background:var(--blt);border:1px solid #b3d1f0;border-radius:var(--rl);padding:14px;margin-bottom:14px;}
+.plt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.plt-title{font-size:13px;font-weight:700;color:var(--blue);display:flex;align-items:center;gap:7px;}
+.plt-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);}
+.toggle-sw{position:relative;width:38px;height:20px;cursor:pointer;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.toggle-sl{position:absolute;inset:0;background:#ccd0d8;border-radius:99px;transition:.3s;}
+.toggle-sl:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle-sw input:checked + .toggle-sl{background:var(--blue);}
+.toggle-sw input:checked + .toggle-sl:before{transform:translateX(18px);}
+.plt-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.plt-field{display:flex;flex-direction:column;gap:4px;}
+.plt-field label{font-size:11px;font-weight:700;color:var(--blue);}
+.plt-field input{background:#fff;border-color:#b3d1f0;font-weight:600;}
+.plt-note{font-size:11px;color:var(--text2);margin-top:6px;font-style:italic;}
+
+/* ── SPECCHIETTO RIFORNIMENTO ── */
+.rbox{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:12px;}
+.rh3{display:grid;grid-template-columns:150px 1fr 1fr;background:var(--bg2);border-bottom:1px solid var(--border);}
+.rh4{display:grid;grid-template-columns:150px 1fr 1fr 1fr;background:var(--bg2);border-bottom:1px solid var(--border);}
+.rhc{padding:8px 12px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;text-transform:uppercase;letter-spacing:.04em;}
+.rhc:first-child{text-align:left;border-right:1px solid var(--border);}
+.rhc:not(:first-child):not(:last-child){border-right:1px solid var(--border);}
+.rr3{display:grid;grid-template-columns:150px 1fr 1fr;border-bottom:1px solid var(--border);align-items:center;}
+.rr4{display:grid;grid-template-columns:150px 1fr 1fr 1fr;border-bottom:1px solid var(--border);align-items:center;}
+.rr3:hover,.rr4:hover{background:var(--bg2);}
+.rlbl{padding:10px 12px;display:flex;align-items:center;gap:8px;border-right:1px solid var(--border);}
+.rdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.rdot-g{background:var(--green);}
+.rdot-b{background:var(--orange);}
+.rdot-a{background:var(--blue);}
+.rdot-x{background:var(--purple);}
+.rlbl span{font-size:13px;font-weight:600;}
+.rcell{padding:5px 7px;border-right:1px solid var(--border);}
+.rcell:last-child{border-right:none;}
+.rcell input{border:1px solid transparent;background:transparent;text-align:right;padding:5px 7px;font-size:13px;}
+.rcell input:focus{border-color:var(--blue);background:var(--bg);border-radius:var(--r);}
+.rcell input[type="text"]{text-align:left;}
+.rtot{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-top:1px solid var(--border);background:var(--bg2);}
+
+/* ── FILTRI ── */
+.fbar{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px;}
+.fmode{display:flex;gap:6px;margin-bottom:12px;}
+.fm{padding:5px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font);font-weight:500;}
+.fm.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+
+/* ── CLIENTI ── */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:14px;}
+.ccard{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;}
+.cname{font-size:14px;font-weight:700;margin-bottom:5px;}
+.cinfo{font-size:11px;color:var(--text2);margin-bottom:2px;}
+.ctags{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+
+/* ── VEICOLI ── */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;}
+.vcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:11px;display:flex;align-items:center;gap:9px;}
+.vcard i{font-size:20px;color:var(--text3);}
+
+/* ── FATTURA PREVIEW ── */
+.frig{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:10px;border-left:4px solid var(--blue);}
+.frig-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.frig-targa{font-size:15px;font-weight:700;color:var(--blue);}
+/* Tabella righe editabili fattura */
+.ftable{width:100%;border-collapse:collapse;margin-top:8px;}
+.ftable th{font-size:11px;font-weight:700;color:var(--text3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);text-transform:uppercase;}
+.ftable th.tdr{text-align:right;}
+.ftable td{padding:4px 6px;border-bottom:1px solid var(--bg3);}
+.ftable td input{border:1px solid transparent;background:transparent;font-size:12px;padding:5px 6px;border-radius:var(--r);}
+.ftable td input:focus{border-color:var(--blue);background:var(--bg);}
+.ftable td input.td-num{text-align:right;}
+.friga-header{background:var(--bg2);font-style:italic;font-size:12px;color:var(--text2);padding:8px 10px;border-radius:var(--r);margin-bottom:8px;border-left:3px solid var(--blue);}
+.iva-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-top:12px;}
+.iva-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;}
+.iva-tot{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid var(--border);margin-top:6px;}
+.iva-tot .il{font-size:15px;font-weight:700;}
+.iva-tot .iv{font-size:21px;font-weight:700;color:var(--blue);}
+.fitem{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:11px 14px;margin-bottom:6px;display:grid;grid-template-columns:auto 1fr auto auto auto;gap:9px;align-items:center;}
+
+.addform{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:14px;}
+.addform.open{display:block;}
+.tabsub{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+.tsb{padding:7px 15px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tsb.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--bg);border-radius:var(--rl);border:1px solid var(--border);width:90%;max-width:680px;max-height:84vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.15);}
+.modal-hdr{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-body{padding:13px 16px;overflow-y:auto;flex:1;}
+.modal-ftr{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.xml-pre{font-family:var(--mono);font-size:10px;white-space:pre;overflow-x:auto;line-height:1.7;color:var(--text2);}
+
+.toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.15);}
+.toast.show{opacity:1;}
+.empty{text-align:center;padding:38px;color:var(--text3);}
+.empty i{font-size:38px;margin-bottom:8px;display:block;}
+
+
+/* ── 4 BUONI TOUCH ── */
+.buoni-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start;}
+@media(max-width:980px){.buoni-grid{grid-template-columns:1fr;}}
+.buono-card{background:#fff;border:2px solid #cfd5de;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.buono-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.buono-brand{font-size:14px;font-weight:800;line-height:1.25;}
+.buono-brand small{display:block;font-size:9px;font-weight:500;color:var(--text2);margin-top:3px;}
+.buono-num{font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;background:var(--blt);padding:6px 9px;border-radius:8px;}
+.buono-client{border:2px solid #30343b;border-radius:14px;padding:10px;margin-bottom:12px;}
+.buono-client label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.touch-input,.touch-select{min-height:42px;font-size:15px!important;padding:9px 11px!important;border-radius:9px!important;}
+.buono-grid2{display:grid;grid-template-columns:1.25fr .75fr;gap:10px;margin-bottom:10px;}
+.buono-righe{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.buono-riga{display:grid;grid-template-columns:92px 1fr 1fr;gap:6px;align-items:center;padding:7px;border-bottom:1px solid var(--border);}
+.buono-riga:last-child{border-bottom:none;}
+.buono-riga.acc{grid-template-columns:92px 1fr 90px;}
+.buono-riga .prodotto{font-size:11px;font-weight:800;}
+.buono-riga input{min-height:38px;font-size:14px!important;padding:7px 8px!important;text-align:right;}
+.buono-riga input[type=text]{text-align:left;}
+.buono-riga .sub{display:block;font-size:9px;color:var(--text3);font-weight:500;margin-top:2px;}
+.buono-tot{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;background:var(--bg2);font-size:13px;font-weight:700;}
+.buono-tot strong{font-size:21px;color:var(--blue);}
+.buono-foot{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px;}
+.buono-foot .btn{min-height:46px;justify-content:center;font-size:13px;}
+.buono-reset{margin-top:7px;text-align:right;}
+.buono-reset button{border:0;background:none;color:var(--text3);font-size:11px;cursor:pointer;padding:4px 7px;}
+.buono-status{font-size:11px;color:var(--text3);margin-top:7px;min-height:15px;}
+.buono-status.saved{color:var(--green);font-weight:700;}
+
+/* ── iPAD AIR 13 LANDSCAPE ── */
+.menu-toggle{width:42px;height:42px;border:1px solid var(--border);background:var(--bg);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:21px;color:var(--text);cursor:pointer;flex:0 0 auto;}
+.menu-toggle:active{transform:scale(.97);}
+.ipad-title-wrap{display:flex;align-items:center;gap:10px;min-width:0;}
+.sidebar{transition:transform .2s ease,width .2s ease;}
+body.sidebar-closed .sidebar{transform:translateX(-100%);}
+body.sidebar-closed .main{margin-left:0;max-width:none;width:100%;}
+.main{transition:margin-left .2s ease;}
+@media (orientation:landscape) and (min-width:1000px) and (max-width:1500px){
+  html,body{width:100%;height:100%;overflow:hidden;}
+  .layout{height:100vh;min-height:0;}
+  .main{padding:10px 12px 8px;max-width:none;width:calc(100% - 220px);height:100vh;overflow:hidden;}
+  body.sidebar-closed .main{width:100%;}
+  .ipad-topbar{height:44px;margin-bottom:6px;}
+  .ptitle{font-size:17px;}
+  .numr{font-size:10px;padding:4px 7px;}
+  #view-ricevuta{height:calc(100vh - 58px);display:flex!important;flex-direction:column;min-height:0;}
+  #view-ricevuta .plt-panel{padding:6px 10px;margin-bottom:7px;flex:0 0 auto;}
+  #view-ricevuta .plt-header{margin-bottom:5px;}
+  #view-ricevuta .plt-title{font-size:11px;}
+  #view-ricevuta .plt-toggle{font-size:10px;}
+  #view-ricevuta .plt-fields{grid-template-columns:1fr 1fr;gap:8px;}
+  #view-ricevuta .plt-field{flex-direction:row;align-items:center;gap:5px;}
+  #view-ricevuta .plt-field label{font-size:9px;white-space:nowrap;}
+  #view-ricevuta .plt-field input{min-height:30px;padding:4px 7px!important;font-size:12px!important;}
+  #view-ricevuta .plt-note{display:none;}
+  .buoni-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:1;min-height:0;overflow:hidden;}
+  .buono-card{padding:8px 9px;border-radius:11px;border-width:1.5px;min-height:0;overflow:hidden;}
+  .buono-head{margin-bottom:5px;padding-bottom:5px;gap:5px;}
+  .buono-brand{font-size:10px;line-height:1.15;}
+  .buono-brand small{font-size:6.5px;margin-top:2px;}
+  .buono-num{font-size:9px;padding:3px 5px;border-radius:6px;}
+  .buono-client{border-width:1.5px;border-radius:8px;padding:5px 6px;margin-bottom:6px;}
+  .buono-client label,label{font-size:8px;}
+  .touch-input,.touch-select{min-height:31px!important;font-size:11px!important;padding:5px 7px!important;border-radius:7px!important;}
+  .buono-grid2{gap:6px;margin-bottom:5px;}
+  .buono-righe{border-radius:8px;margin-bottom:5px;}
+  .buono-riga{grid-template-columns:78px 1fr 1fr;gap:4px;padding:4px;}
+  .buono-riga.acc{grid-template-columns:78px 1fr 64px;}
+  .buono-riga .prodotto{font-size:8px;}
+  .buono-riga .sub{font-size:6.5px;margin-top:1px;}
+  .buono-riga input{min-height:27px!important;font-size:10px!important;padding:4px 5px!important;}
+  .buono-tot{padding:5px 7px;font-size:9px;}
+  .buono-tot strong{font-size:14px;}
+  .buono-foot{margin-top:5px;}
+  .buono-foot .btn{min-height:32px;font-size:10px;padding:5px 8px;}
+  .buono-status{font-size:8px;min-height:11px;margin-top:3px;}
+  .buono-reset{margin-top:0;line-height:1;}
+  .buono-reset button{font-size:8px;padding:2px 4px;}
+}
+@media (orientation:portrait) and (max-width:1100px){
+  body.sidebar-closed .main{margin-left:0;}
+}
+
+.print-only{display:none;}
+@media print{
+  body>*{display:none!important;}
+  #print-area{display:block!important;}
+  @page{size:80mm 140mm;margin:0;}
+  .print-copy{width:80mm;min-height:140mm;padding:4mm 4mm 3mm;font-family:Arial,sans-serif;color:#111;page-break-after:always;}
+  .print-copy:last-child{page-break-after:auto;}
+  .pc-head{display:flex;justify-content:space-between;gap:4mm;border-bottom:.3mm solid #222;padding-bottom:2mm;margin-bottom:2.5mm;}
+  .pc-brand{font-size:11px;font-weight:800;line-height:1.15;}
+  .pc-brand small{display:block;font-size:6.5px;font-weight:400;margin-top:1mm;}
+  .pc-num{text-align:right;font-size:8px;font-weight:700;}
+  .pc-client{border:.5mm solid #222;border-radius:3mm;padding:2mm;margin-bottom:2.5mm;}
+  .pc-label{font-size:6.5px;font-weight:700;text-transform:uppercase;}
+  .pc-value{font-size:9px;font-weight:700;margin-top:1mm;min-height:4mm;}
+  .pc-row{display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:2.5mm;}
+  .pc-box{border:.25mm solid #888;border-radius:2mm;padding:1.7mm;}
+  .pc-box .pc-value{font-size:8px;font-weight:600;}
+  .pc-table{border:.3mm solid #333;border-radius:2.5mm;overflow:hidden;}
+  .pc-line{display:grid;grid-template-columns:18mm 1fr 18mm;border-bottom:.2mm solid #bbb;align-items:center;min-height:8mm;padding:1mm;}
+  .pc-line.acc{grid-template-columns:18mm 1fr 18mm;}
+  .pc-line:last-child{border-bottom:none;}
+  .pc-prod{font-size:7px;font-weight:800;}
+  .pc-detail{font-size:6.5px;line-height:1.25;}
+  .pc-euro{text-align:right;font-size:7.5px;font-weight:700;}
+  .pc-total{display:flex;justify-content:space-between;border-top:.5mm solid #222;margin-top:2mm;padding-top:2mm;font-size:9px;font-weight:800;}
+  .pc-sign{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:6mm;font-size:6.5px;}
+  .pc-signline{border-top:.25mm solid #222;padding-top:1mm;min-height:7mm;}
+  .pc-note{font-size:5.8px;line-height:1.25;margin-top:5mm;}
+}
+
+@media(max-width:768px){
+  .sidebar{width:100%;height:auto;position:relative;border-right:none;border-bottom:1px solid var(--border);}
+  .sb-logo{display:none;}.sb-foot{display:none;}
+  .sb-nav{display:flex;flex-direction:row;padding:6px;overflow-x:auto;flex:none;}
+  .ni{white-space:nowrap;flex-shrink:0;}
+  .main{margin-left:0;padding:12px;}
+  .metrics{grid-template-columns:1fr 1fr;}
+  .fg,.fg3,.fgrid{grid-template-columns:1fr;}
+  .rh3,.rr3{grid-template-columns:110px 1fr 1fr;}
+  .rh4,.rr4{grid-template-columns:110px 1fr 1fr 1fr;}
+  .fitem{grid-template-columns:1fr auto;}
+}
+
+.auth-gate{position:fixed;inset:0;background:rgba(244,246,249,.98);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-box{width:min(420px,100%);background:#fff;border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 18px 60px rgba(0,0,0,.12);}
+.auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.auth-brand i{font-size:28px;color:var(--blue);}
+.auth-brand strong{font-size:18px;}
+.auth-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.auth-box h3{font-size:17px;margin-bottom:6px;}
+.auth-box p{font-size:12px;color:var(--text2);margin-bottom:18px;line-height:1.5;}
+.auth-actions{display:flex;justify-content:flex-end;margin-top:16px;}
+.auth-error{display:none;background:var(--rlt);color:var(--red);border-radius:8px;padding:9px 11px;font-size:12px;margin-top:12px;}
+.auth-loading{display:none;color:var(--text3);font-size:11px;margin-top:10px;}
+</style>
+
+<style id="remove-number-spinners">
+/* Rimuove le freccette +/- dai campi numerici */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+</style>
+
+
+<style id="plate-autocomplete-css">
+.plate-suggestions{position:relative;margin-top:4px;z-index:50}
+.plate-suggestions-list{position:absolute;left:0;right:0;top:0;background:var(--card,#fff);border:1px solid var(--border,#ddd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:180px;overflow:auto}
+.plate-suggestion{display:block;width:100%;border:0;background:transparent;text-align:left;padding:12px 14px;font-size:15px;cursor:pointer}
+.plate-suggestion + .plate-suggestion{border-top:1px solid var(--border,#eee)}
+.plate-suggestion:active{background:var(--bg,#f5f5f5)}
+</style>
+
+
+<style id="responsive-v21">
+/* ==========================================================
+   ROSETO CARBURANTI — RESPONSIVE V21
+   Desktop / tablet / smartphone
+   Mantiene intatta la logica Supabase della v19.
+   ========================================================== */
+
+html, body { width:100%; min-height:100%; }
+body { overflow-x:hidden; }
+
+/* ---- BASE: desktop ---- */
+.layout { min-height:100vh; }
+.sidebar {
+  width:220px;
+  position:fixed;
+  top:0; left:0; bottom:0;
+  height:100vh;
+  transform:none;
+  z-index:1000;
+}
+.main {
+  margin-left:220px;
+  width:calc(100% - 220px);
+  max-width:none;
+  min-width:0;
+  padding:20px;
+  overflow:visible;
+}
+body.sidebar-closed .main {
+  margin-left:0;
+  width:100%;
+}
+.buoni-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  align-items:start;
+  width:100%;
+}
+.buono-card {
+  min-width:0;
+  width:100%;
+  overflow:visible;
+}
+.buono-riga {
+  min-width:0;
+}
+.buono-riga input,
+.buono-grid2 input,
+.buono-grid2 select,
+.buono-client input,
+.buono-client select {
+  min-width:0;
+}
+.table-wrap,
+.card:has(.dt) {
+  max-width:100%;
+}
+
+/* ---- 1200px+: 2x2 buoni comodi ---- */
+@media (min-width:1200px) {
+  .main { padding:18px 22px; }
+  .buoni-grid { gap:14px; }
+  .buono-card { padding:13px; }
+}
+
+/* ---- 769–1199px: tablet / notebook ---- */
+@media (min-width:769px) and (max-width:1199px) {
+  .sidebar { width:205px; }
+  .main {
+    margin-left:205px;
+    width:calc(100% - 205px);
+    padding:14px;
+  }
+  body.sidebar-closed .main { margin-left:0; width:100%; }
+
+  /* NON bloccare la pagina: i buoni possono crescere e si può scorrere */
+  html, body { overflow:auto !important; }
+  .layout { min-height:100vh; }
+  .main { height:auto !important; max-height:none !important; overflow:visible !important; }
+
+  .buoni-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .buono-card { padding:10px; border-radius:12px; }
+  .buono-brand { font-size:12px; }
+  .buono-brand small { font-size:8px; }
+  .buono-num { font-size:11px; padding:5px 7px; }
+  .touch-input,.touch-select { min-height:38px !important; font-size:13px !important; }
+  .buono-riga { grid-template-columns:76px minmax(0,1fr) minmax(0,1fr); }
+  .buono-riga.acc { grid-template-columns:76px minmax(0,1fr) 72px; }
+  .buono-riga input { min-height:34px !important; font-size:12px !important; }
+  .buono-foot .btn { min-height:40px; }
+}
+
+/* ---- smartphone: menu laterale vero, non barra orizzontale ---- */
+@media (max-width:768px) {
+  html, body {
+    width:100%;
+    min-height:100%;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+  }
+
+  .layout { display:block; min-height:100vh; }
+
+  .sidebar {
+    width:min(290px,84vw);
+    height:100vh;
+    position:fixed;
+    top:0; left:0; bottom:0;
+    border-right:1px solid var(--border);
+    border-bottom:none;
+    transform:translateX(-105%);
+    transition:transform .22s ease;
+    box-shadow:8px 0 30px rgba(0,0,0,.12);
+    z-index:3000;
+  }
+  body:not(.sidebar-closed) .sidebar { transform:translateX(0); }
+
+  .sb-logo {
+    display:block;
+    padding:18px 16px 14px;
+  }
+  .sb-logo h2 { font-size:15px; }
+  .sb-logo p { font-size:11px; }
+
+  .sb-nav {
+    display:block;
+    padding:10px;
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  .ni {
+    width:100%;
+    display:flex;
+    white-space:normal;
+    min-height:44px;
+    padding:11px 13px;
+    font-size:14px;
+    margin-bottom:3px;
+  }
+  .ni i { font-size:19px; }
+
+  .sb-foot {
+    display:block;
+    padding:10px;
+  }
+
+  /* backdrop generato dal CSS */
+  .sidebar::after {
+    content:"";
+    position:fixed;
+    left:100%;
+    top:0;
+    width:calc(100vw - min(290px,84vw));
+    height:100vh;
+    background:rgba(0,0,0,.35);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .22s ease;
+  }
+  body:not(.sidebar-closed) .sidebar::after {
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .main {
+    margin-left:0 !important;
+    width:100% !important;
+    max-width:none !important;
+    padding:12px;
+    min-height:100vh;
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+
+  .topbar,
+  .ipad-topbar {
+    min-height:48px;
+    margin-bottom:12px;
+  }
+  .ptitle { font-size:18px; }
+
+  .buoni-grid {
+    grid-template-columns:1fr;
+    gap:12px;
+    overflow:visible !important;
+  }
+  .buono-card {
+    padding:12px;
+    border-radius:13px;
+  }
+  .buono-brand { font-size:13px; }
+  .buono-brand small { font-size:8px; }
+  .buono-num { font-size:11px; }
+  .buono-grid2 { grid-template-columns:1fr; }
+  .buono-riga {
+    grid-template-columns:84px minmax(0,1fr) minmax(0,1fr);
+  }
+  .buono-riga.acc {
+    grid-template-columns:84px minmax(0,1fr) 78px;
+  }
+  .buono-riga input { min-height:40px; font-size:13px !important; }
+  .touch-input,.touch-select {
+    min-height:42px !important;
+    font-size:14px !important;
+  }
+  .buono-foot .btn {
+    min-height:48px;
+    font-size:13px;
+  }
+
+  .metrics { grid-template-columns:1fr 1fr; }
+  .fg, .fg3, .fgrid { grid-template-columns:1fr; }
+
+  /* Tabelle: scorrimento dentro il contenitore, non sulla pagina */
+  .card { overflow-x:auto; }
+  .dt { min-width:650px; }
+
+  .rbox { overflow-x:auto; }
+  .rh3,.rr3 { min-width:520px; }
+  .rh4,.rr4 { min-width:650px; }
+
+  .fitem {
+    grid-template-columns:1fr auto;
+  }
+
+  /* chiuso: il contenuto torna a occupare tutto */
+  body.sidebar-closed .main {
+    margin-left:0 !important;
+    width:100% !important;
+  }
+}
+
+/* ---- smartphone molto stretto ---- */
+@media (max-width:430px) {
+  .main { padding:8px; }
+  .buono-card { padding:9px; }
+  .buono-riga {
+    grid-template-columns:72px minmax(0,1fr) minmax(0,1fr);
+    gap:4px;
+    padding:5px;
+  }
+  .buono-riga.acc { grid-template-columns:72px minmax(0,1fr) 68px; }
+  .buono-riga .prodotto { font-size:9px; }
+  .buono-riga .sub { font-size:7px; }
+  .buono-riga input { min-height:38px !important; padding:6px !important; }
+  .metrics { gap:6px; }
+  .met { padding:10px; }
+}
+
+/* ---- Touch: evita zoom accidentale sui controlli ---- */
+@media (pointer:coarse) {
+  button, .btn, .ni, select, input, textarea {
+    touch-action:manipulation;
+  }
+}
+
+/* ---- sicurezza: annulla il vecchio layout iPad che bloccava la pagina ---- */
+@media (orientation:landscape) and (min-width:1000px) and (max-width:1500px) {
+  html, body {
+    height:auto !important;
+    min-height:100% !important;
+    overflow:auto !important;
+  }
+  .main {
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    width:calc(100% - 220px) !important;
+  }
+  body.sidebar-closed .main {
+    width:100% !important;
+  }
+  #view-ricevuta {
+    height:auto !important;
+    display:block !important;
+  }
+  #view-ricevuta .buoni-grid {
+    overflow:visible !important;
+  }
+}
+</style>
+
+
+<style id="reprint-style-v22">
+.btn-reprint-v22{min-height:36px;padding:7px 10px;border-radius:8px;cursor:pointer}
+@media(max-width:768px){.btn-reprint-v22{min-height:44px;width:100%;margin-top:5px}}
+</style>
+
+<style id="archive-reprint-v23">
+@media (max-width:768px){
+  .tdact .bsm{min-height:40px;margin:2px;padding:7px 9px}
+}
+</style>
+
+</head>
+<body>
+<div class="auth-gate" id="auth-gate">
+  <div class="auth-box">
+    <div class="auth-brand"><i class="ti ti-gas-station"></i><div><strong>Roseto Carburanti</strong><div class="auth-sub">Gestionale rifornimenti</div></div></div>
+    <h3>Accesso al gestionale</h3>
+    <p>Accedi con l'utenza autorizzata. La sessione resterà attiva sul dispositivo.</p>
+    <div class="g"><label>Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="Email gestionale"></div>
+    <div class="g" style="margin-top:10px;"><label>Password</label><input id="auth-password" type="password" autocomplete="current-password" placeholder="Password"></div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-loading" id="auth-loading">Accesso in corso…</div>
+    <div class="auth-actions"><button class="btn bp" id="auth-login-btn" onclick="loginGestionale()"><i class="ti ti-login"></i> Accedi</button></div>
+  </div>
+</div>
+<div class="layout">
+
+<aside class="sidebar" id="app-sidebar">
+  <div class="sb-logo">
+    <h2><i class="ti ti-gas-station" style="color:var(--blue);margin-right:5px;"></i>Roseto Carburanti</h2>
+    <p>Gestionale rifornimenti</p>
+  </div>
+  <nav class="sb-nav">
+    <button class="ni active" onclick="showView('ricevuta')" id="nav-ricevuta"><i class="ti ti-file-plus"></i> Nuova ricevuta</button>
+    <button class="ni" onclick="showView('archivio')" id="nav-archivio"><i class="ti ti-files"></i> Archivio</button>
+    <button class="ni" onclick="showView('clienti')" id="nav-clienti"><i class="ti ti-users"></i> Clienti</button>
+    <button class="ni" onclick="showView('veicoli')" id="nav-veicoli"><i class="ti ti-car"></i> Veicoli</button>
+    <button class="ni" onclick="showView('riepilogo')" id="nav-riepilogo"><i class="ti ti-report"></i> Riepilogo</button>
+    <button class="ni" onclick="showView('fattura')" id="nav-fattura"><i class="ti ti-receipt-2"></i> Fatturazione</button>
+  </nav>
+  <div class="sb-foot">
+    <div style="font-size:10px;color:var(--text3);padding:6px 10px;"><i class="ti ti-cloud-check" style="font-size:12px;margin-right:3px;"></i><span id="cloud-status">Dati sincronizzati</span></div>
+    <div style="display:flex;gap:4px;padding:4px 8px 8px;">
+      <button class="btn bsm" style="flex:1;justify-content:center;" onclick="esportaBackup()"><i class="ti ti-download"></i> Backup</button>
+      <button class="btn bsm" style="flex:1;justify-content:center;" onclick="logoutGestionale()"><i class="ti ti-logout"></i> Esci</button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- ══════ NUOVA RICEVUTA ══════ -->
+<div id="view-ricevuta" class="view">
+  <div class="topbar ipad-topbar">
+    <div class="ipad-title-wrap"><button class="menu-toggle" onclick="toggleSidebar()" aria-label="Apri menu"><i class="ti ti-menu-2"></i></button><div><span class="ptitle">Buoni di rifornimento</span>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px;">4 buoni · modalità touch · iPad landscape</div></div>
+    </div>
+    <span class="numr" id="num-display">Prossimo N° 0001</span>
+  </div>
+
+  <div class="plt-panel">
+    <div class="plt-header">
+      <span class="plt-title"><i class="ti ti-adjustments-horizontal"></i> Prezzi al litro</span>
+      <div class="plt-toggle"><span>Calcolo automatico litri/euro</span><label class="toggle-sw"><input type="checkbox" id="plt-active" checked onchange="togglePlt()"><span class="toggle-sl"></span></label></div>
+    </div>
+    <div class="plt-fields">
+      <div class="plt-field"><label><i class="ti ti-droplet" style="color:var(--green);"></i> Prezzo Gasolio (€/litro)</label><input class="touch-input" type="number" id="plt-gasolio" value="2.049" step="0.001" min="0" placeholder="2.049" oninput="ricalcolaTuttiBuoni()"></div>
+      <div class="plt-field"><label><i class="ti ti-droplet" style="color:var(--orange);"></i> Prezzo Benzina (€/litro)</label><input class="touch-input" type="number" id="plt-benzina" value="1.950" step="0.001" min="0" placeholder="1.950" oninput="ricalcolaTuttiBuoni()"></div>
+    </div>
+    <p class="plt-note" id="plt-note">✓ Attivo — inserendo i litri calcola l'importo automaticamente, e viceversa.</p>
+  </div>
+
+  <div class="buoni-grid" id="buoni-grid">
+
+    <section class="buono-card" id="buono-0">
+      <div class="buono-head">
+        <div class="buono-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C. · Via Nazionale 436 · Roseto degli Abruzzi · P.IVA 00838100675</small></div>
+        <div class="buono-num" id="b-num-0">N° —</div>
+      </div>
+      <div class="buono-client">
+        <label>Cliente</label>
+        <select class="touch-select" id="b-cliente-0" onchange="onBuonoClienteChange(0)"><option value="">— Seleziona cliente —</option></select>
+      </div>
+      <div class="buono-grid2">
+        <div class="g"><label>Targa</label><select class="touch-select" id="b-veicolo-0"><option value="">— Prima seleziona cliente —</option></select></div>
+        <div class="g"><label>Km</label><input class="touch-input" type="number" id="b-km-0" placeholder="Km"></div>
+      </div>
+      <div class="buono-righe">
+        <div class="buono-riga"><div class="prodotto">BENZINA SP.<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-benzina-0" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(0,'benzina')"><input type="number" id="b-euro-benzina-0" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(0,'benzina')"></div>
+        <div class="buono-riga"><div class="prodotto">GASOLIO<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-gasolio-0" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(0,'gasolio')"><input type="number" id="b-euro-gasolio-0" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(0,'gasolio')"></div>
+        <div class="buono-riga"><div class="prodotto">ADBLUE<span class="sub">LT · €</span></div><input type="number" id="b-litri-adblue-0" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoTot(0)"><input type="number" id="b-euro-adblue-0" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(0)"></div>
+        <div class="buono-riga acc"><div class="prodotto">ACCESSORI</div><input type="text" id="b-desc-accessori-0" placeholder="Descrizione"><input type="number" id="b-euro-accessori-0" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(0)"></div>
+      </div>
+      <div class="buono-tot"><span>Totale buono</span><strong id="b-tot-0">€ 0,00</strong></div>
+      <div class="buono-grid2" style="margin-top:10px;margin-bottom:0;">
+        <div class="g"><label>Firma conducente</label><input class="touch-input" type="text" id="b-firma-0" placeholder="Nome e cognome"></div>
+        <div class="g"><label>Data</label><input class="touch-input" type="date" id="b-data-0"></div>
+      </div>
+      <div class="buono-foot">
+        <button class="btn bgreen" onclick="salvaBuono(0,true)"><i class="ti ti-device-floppy"></i><i class="ti ti-printer"></i> Salva e stampa 2 copie</button>
+      </div>
+      <div class="buono-status" id="b-status-0"></div>
+      <div class="buono-reset"><button onclick="resetBuono(0)"><i class="ti ti-refresh"></i> Azzera buono</button></div>
+    </section>
+
+    <section class="buono-card" id="buono-1">
+      <div class="buono-head">
+        <div class="buono-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C. · Via Nazionale 436 · Roseto degli Abruzzi · P.IVA 00838100675</small></div>
+        <div class="buono-num" id="b-num-1">N° —</div>
+      </div>
+      <div class="buono-client">
+        <label>Cliente</label>
+        <select class="touch-select" id="b-cliente-1" onchange="onBuonoClienteChange(1)"><option value="">— Seleziona cliente —</option></select>
+      </div>
+      <div class="buono-grid2">
+        <div class="g"><label>Targa</label><select class="touch-select" id="b-veicolo-1"><option value="">— Prima seleziona cliente —</option></select></div>
+        <div class="g"><label>Km</label><input class="touch-input" type="number" id="b-km-1" placeholder="Km"></div>
+      </div>
+      <div class="buono-righe">
+        <div class="buono-riga"><div class="prodotto">BENZINA SP.<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-benzina-1" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(1,'benzina')"><input type="number" id="b-euro-benzina-1" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(1,'benzina')"></div>
+        <div class="buono-riga"><div class="prodotto">GASOLIO<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-gasolio-1" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(1,'gasolio')"><input type="number" id="b-euro-gasolio-1" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(1,'gasolio')"></div>
+        <div class="buono-riga"><div class="prodotto">ADBLUE<span class="sub">LT · €</span></div><input type="number" id="b-litri-adblue-1" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoTot(1)"><input type="number" id="b-euro-adblue-1" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(1)"></div>
+        <div class="buono-riga acc"><div class="prodotto">ACCESSORI</div><input type="text" id="b-desc-accessori-1" placeholder="Descrizione"><input type="number" id="b-euro-accessori-1" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(1)"></div>
+      </div>
+      <div class="buono-tot"><span>Totale buono</span><strong id="b-tot-1">€ 0,00</strong></div>
+      <div class="buono-grid2" style="margin-top:10px;margin-bottom:0;">
+        <div class="g"><label>Firma conducente</label><input class="touch-input" type="text" id="b-firma-1" placeholder="Nome e cognome"></div>
+        <div class="g"><label>Data</label><input class="touch-input" type="date" id="b-data-1"></div>
+      </div>
+      <div class="buono-foot">
+        <button class="btn bgreen" onclick="salvaBuono(1,true)"><i class="ti ti-device-floppy"></i><i class="ti ti-printer"></i> Salva e stampa 2 copie</button>
+      </div>
+      <div class="buono-status" id="b-status-1"></div>
+      <div class="buono-reset"><button onclick="resetBuono(1)"><i class="ti ti-refresh"></i> Azzera buono</button></div>
+    </section>
+
+    <section class="buono-card" id="buono-2">
+      <div class="buono-head">
+        <div class="buono-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C. · Via Nazionale 436 · Roseto degli Abruzzi · P.IVA 00838100675</small></div>
+        <div class="buono-num" id="b-num-2">N° —</div>
+      </div>
+      <div class="buono-client">
+        <label>Cliente</label>
+        <select class="touch-select" id="b-cliente-2" onchange="onBuonoClienteChange(2)"><option value="">— Seleziona cliente —</option></select>
+      </div>
+      <div class="buono-grid2">
+        <div class="g"><label>Targa</label><select class="touch-select" id="b-veicolo-2"><option value="">— Prima seleziona cliente —</option></select></div>
+        <div class="g"><label>Km</label><input class="touch-input" type="number" id="b-km-2" placeholder="Km"></div>
+      </div>
+      <div class="buono-righe">
+        <div class="buono-riga"><div class="prodotto">BENZINA SP.<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-benzina-2" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(2,'benzina')"><input type="number" id="b-euro-benzina-2" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(2,'benzina')"></div>
+        <div class="buono-riga"><div class="prodotto">GASOLIO<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-gasolio-2" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(2,'gasolio')"><input type="number" id="b-euro-gasolio-2" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(2,'gasolio')"></div>
+        <div class="buono-riga"><div class="prodotto">ADBLUE<span class="sub">LT · €</span></div><input type="number" id="b-litri-adblue-2" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoTot(2)"><input type="number" id="b-euro-adblue-2" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(2)"></div>
+        <div class="buono-riga acc"><div class="prodotto">ACCESSORI</div><input type="text" id="b-desc-accessori-2" placeholder="Descrizione"><input type="number" id="b-euro-accessori-2" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(2)"></div>
+      </div>
+      <div class="buono-tot"><span>Totale buono</span><strong id="b-tot-2">€ 0,00</strong></div>
+      <div class="buono-grid2" style="margin-top:10px;margin-bottom:0;">
+        <div class="g"><label>Firma conducente</label><input class="touch-input" type="text" id="b-firma-2" placeholder="Nome e cognome"></div>
+        <div class="g"><label>Data</label><input class="touch-input" type="date" id="b-data-2"></div>
+      </div>
+      <div class="buono-foot">
+        <button class="btn bgreen" onclick="salvaBuono(2,true)"><i class="ti ti-device-floppy"></i><i class="ti ti-printer"></i> Salva e stampa 2 copie</button>
+      </div>
+      <div class="buono-status" id="b-status-2"></div>
+      <div class="buono-reset"><button onclick="resetBuono(2)"><i class="ti ti-refresh"></i> Azzera buono</button></div>
+    </section>
+
+    <section class="buono-card" id="buono-3">
+      <div class="buono-head">
+        <div class="buono-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C. · Via Nazionale 436 · Roseto degli Abruzzi · P.IVA 00838100675</small></div>
+        <div class="buono-num" id="b-num-3">N° —</div>
+      </div>
+      <div class="buono-client">
+        <label>Cliente</label>
+        <select class="touch-select" id="b-cliente-3" onchange="onBuonoClienteChange(3)"><option value="">— Seleziona cliente —</option></select>
+      </div>
+      <div class="buono-grid2">
+        <div class="g"><label>Targa</label><select class="touch-select" id="b-veicolo-3"><option value="">— Prima seleziona cliente —</option></select></div>
+        <div class="g"><label>Km</label><input class="touch-input" type="number" id="b-km-3" placeholder="Km"></div>
+      </div>
+      <div class="buono-righe">
+        <div class="buono-riga"><div class="prodotto">BENZINA SP.<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-benzina-3" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(3,'benzina')"><input type="number" id="b-euro-benzina-3" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(3,'benzina')"></div>
+        <div class="buono-riga"><div class="prodotto">GASOLIO<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-gasolio-3" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(3,'gasolio')"><input type="number" id="b-euro-gasolio-3" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(3,'gasolio')"></div>
+        <div class="buono-riga"><div class="prodotto">ADBLUE<span class="sub">LT · €</span></div><input type="number" id="b-litri-adblue-3" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoTot(3)"><input type="number" id="b-euro-adblue-3" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(3)"></div>
+        <div class="buono-riga acc"><div class="prodotto">ACCESSORI</div><input type="text" id="b-desc-accessori-3" placeholder="Descrizione"><input type="number" id="b-euro-accessori-3" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(3)"></div>
+      </div>
+      <div class="buono-tot"><span>Totale buono</span><strong id="b-tot-3">€ 0,00</strong></div>
+      <div class="buono-grid2" style="margin-top:10px;margin-bottom:0;">
+        <div class="g"><label>Firma conducente</label><input class="touch-input" type="text" id="b-firma-3" placeholder="Nome e cognome"></div>
+        <div class="g"><label>Data</label><input class="touch-input" type="date" id="b-data-3"></div>
+      </div>
+      <div class="buono-foot">
+        <button class="btn bgreen" onclick="salvaBuono(3,true)"><i class="ti ti-device-floppy"></i><i class="ti ti-printer"></i> Salva e stampa 2 copie</button>
+      </div>
+      <div class="buono-status" id="b-status-3"></div>
+      <div class="buono-reset"><button onclick="resetBuono(3)"><i class="ti ti-refresh"></i> Azzera buono</button></div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════ ARCHIVIO ══════ -->
+<div id="view-archivio" class="view" style="display:none;">
+  <div class="topbar"><span class="ptitle">Archivio ricevute</span></div>
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <select id="arch-cl" onchange="renderArchivio()" style="width:auto;min-width:175px;padding:7px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:var(--font);"><option value="">Tutti i clienti</option></select>
+    <input type="month" id="arch-mese" onchange="renderArchivio()" style="width:auto;padding:7px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:var(--font);">
+  </div>
+  <div id="archivio-list"></div>
+</div>
+
+<!-- ══════ CLIENTI ══════ -->
+<div id="view-clienti" class="view" style="display:none;">
+  <div class="topbar"><span class="ptitle">Clienti</span><button class="btn bp" onclick="toggleForm('adf-c')"><i class="ti ti-plus"></i> Nuovo cliente</button></div>
+  <div class="addform" id="adf-c">
+    <div id="cliente-form-title" style="font-size:13px;font-weight:700;margin-bottom:12px;">Aggiungi cliente</div>
+    <div class="fg">
+      <div class="sep">Dati identificativi</div>
+      <div class="g"><label>Nome / Ragione sociale *</label><input type="text" id="c-nome" placeholder="es. FREE-GO Trasporti srl"></div>
+      <div class="g"><label>P.IVA / Cod. Fiscale</label><input type="text" id="c-piva" placeholder="es. IT01976050672"></div>
+      <div class="sep">Fatturazione elettronica</div>
+      <div class="g"><label>Codice destinatario SDI</label><input type="text" id="c-coddest" placeholder="7 caratteri" maxlength="7" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="g"><label>PEC</label><input type="email" id="c-pec" placeholder="es. azienda@pec.it"></div>
+      <div class="sep">Contatti e sede</div>
+      <div class="g ff"><label>Indirizzo completo</label><input type="text" id="c-indirizzo" placeholder="es. Via Adriatica 5, 64026 Roseto degli Abruzzi (TE)"></div>
+      <div class="g"><label>Telefono</label><input type="text" id="c-tel" placeholder="es. 085 123456"></div>
+      <div class="g"><label>Email</label><input type="email" id="c-email" placeholder="es. info@azienda.it"></div>
+      <div class="g ff"><label>Note</label><input type="text" id="c-note" placeholder="Annotazioni..."></div>
+    </div>
+    <div class="ar"><button class="btn" onclick="annullaModificaCliente()">Annulla</button><button class="btn bp" id="cliente-save-btn" onclick="salvaCliente()"><i class="ti ti-check"></i> Salva</button></div>
+  </div>
+  <div id="lista-clienti" class="cgrid"></div>
+</div>
+
+<!-- ══════ VEICOLI ══════ -->
+<div id="view-veicoli" class="view" style="display:none;">
+  <div class="topbar"><span class="ptitle">Veicoli</span><button class="btn bp" onclick="toggleForm('adf-v')"><i class="ti ti-plus"></i> Nuovo veicolo</button></div>
+  <div class="addform" id="adf-v">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px;" id="veicolo-form-title">Aggiungi veicolo</div>
+    <div class="fg">
+      <div class="g"><label>Targa *</label><input type="text" id="v-targa" placeholder="es. GZ947PN" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="g"><label>Cliente intestatario *</label><select id="v-cliente"><option value="">— Seleziona —</option></select></div>
+      <div class="g"><label>Tipo</label><select id="v-tipo"><option>Autocarro</option><option>Autovettura</option><option>Furgone</option><option>Trattore</option><option>Rimorchio</option><option>Altro</option></select></div>
+      <div class="g"><label>Marca / Modello</label><input type="text" id="v-modello" placeholder="es. Iveco Daily"></div>
+      <div class="g"><label>Anno</label><input type="number" id="v-anno" placeholder="es. 2020"></div>
+      <div class="g"><label>Carburante principale</label><select id="v-carb"><option value="gasolio">Gasolio</option><option value="benzina">Benzina</option><option value="adblue">AdBlue</option></select></div>
+    </div>
+    <div class="ar"><button class="btn" onclick="annullaModificaVeicolo()">Annulla</button><button class="btn bp" id="veicolo-save-btn" onclick="salvaVeicolo()"><i class="ti ti-check"></i> Salva</button></div>
+  </div>
+  <div style="margin-bottom:12px;"><select id="filt-v-cl" onchange="renderVeicoli()" style="width:auto;min-width:190px;padding:7px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:var(--font);"><option value="">Tutti i clienti</option></select></div>
+  <div id="lista-veicoli" class="vgrid"></div>
+</div>
+
+<!-- ══════ RIEPILOGO ══════ -->
+<div id="view-riepilogo" class="view" style="display:none;">
+  <div class="topbar">
+    <span class="ptitle">Riepilogo rifornimenti</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn bpdf" onclick="stampaPDFRiepilogo()"><i class="ti ti-file-type-pdf"></i> PDF</button>
+      <button class="btn bxml" onclick="esportaXMLRiepilogo()"><i class="ti ti-file-type-xml"></i> XML</button>
+    </div>
+  </div>
+  <div class="fbar">
+    <div class="fmode">
+      <button class="fm active" onclick="setFilterMode('mese',this)">Per mese</button>
+      <button class="fm" onclick="setFilterMode('range',this)">Da data a data</button>
+    </div>
+    <div id="fg-mese" class="fgrid">
+      <div class="g"><label>Mese</label><input type="month" id="f-mese" onchange="aggiornaRiepilogo()"></div>
+      <div class="g"><label>Cliente</label><select id="f-cl" onchange="aggiornaRiepilogo()"><option value="">Tutti</option></select></div>
+      <div class="g"><label>Targa</label><select id="f-targa" onchange="aggiornaRiepilogo()"><option value="">Tutte</option></select></div>
+    </div>
+    <div id="fg-range" class="fgrid" style="display:none;">
+      <div class="g"><label>Dal</label><input type="date" id="f-dal" onchange="aggiornaRiepilogo()"></div>
+      <div class="g"><label>Al</label><input type="date" id="f-al" onchange="aggiornaRiepilogo()"></div>
+      <div class="g"><label>Cliente</label><select id="f-cl-r" onchange="aggiornaRiepilogo()"><option value="">Tutti</option></select></div>
+      <div class="g"><label>Targa</label><select id="f-targa-r" onchange="aggiornaRiepilogo()"><option value="">Tutte</option></select></div>
+    </div>
+  </div>
+  <div class="metrics" id="riepilogo-metrics"></div>
+  <div id="riepilogo-body"></div>
+</div>
+
+<!-- ══════ FATTURAZIONE ══════ -->
+<div id="view-fattura" class="view" style="display:none;">
+  <div class="tabsub">
+    <button class="tsb active" onclick="showFattTab('tab-nuova',this)">Nuova fattura</button>
+    <button class="tsb" onclick="showFattTab('tab-arch-fatt',this)">Archivio fatture</button>
+  </div>
+  <div id="tab-nuova">
+    <div class="topbar"><span class="ptitle">Nuova fattura</span><span class="numr" id="num-fatt-display">—</span></div>
+    <div class="card">
+      <div class="fg">
+        <div class="g"><label>Cliente *</label><select id="fat-cl" onchange="onFattClienteChange()"><option value="">— Seleziona —</option></select></div>
+        <div class="g"><label>Mese di riferimento *</label><input type="month" id="fat-mese" onchange="onFattClienteChange()"></div>
+        <div class="g"><label>Numero fattura</label><input type="text" id="fat-numero" placeholder="es. 667"></div>
+        <div class="g"><label>Data emissione</label><input type="date" id="fat-data"></div>
+        <div class="g ff"><label>Note aggiuntive</label><textarea id="fat-note" placeholder="Eventuali annotazioni..."></textarea></div>
+      </div>
+    </div>
+    <div id="fatt-preview" style="display:none;">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px;">
+        Anteprima fattura — tutte le righe sono modificabili prima di generare PDF/XML
+      </div>
+      <!-- Riga fissa intestazione -->
+      <div class="friga-header">
+        <i class="ti ti-lock" style="font-size:12px;margin-right:4px;"></i>
+        <strong>Riga 1 (fissa):</strong> SI RIMETTE FATTURA PER LA FORNITURA DI CARBURANTE EROGATO NEL MESE CORRENTE PER I/L VOSTRO/I AUTOMEZZO/I COME DA RIEPILOGO BUONI IN VS. POSSESSO
+      </div>
+      <div id="fatt-righe"></div>
+      <div class="iva-box">
+        <div class="iva-row"><span style="color:var(--text2);">Imponibile (IVA scorporata 22%)</span><span id="fat-imponibile" style="font-weight:600;">€ 0,00</span></div>
+        <div class="iva-row"><span style="color:var(--text2);">IVA 22%</span><span id="fat-iva" style="font-weight:600;">€ 0,00</span></div>
+        <div class="iva-tot"><span class="il">Totale fattura (IVA inclusa)</span><span class="iv" id="fat-totale">€ 0,00</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--text2);margin-top:8px;"><i class="ti ti-info-circle" style="font-size:12px;margin-right:3px;"></i>I prezzi sono IVA inclusa. L'imponibile viene calcolato scorporando il 22% (importo ÷ 1,22).</p>
+      <div class="ar">
+        <button class="btn bwarn" onclick="salvaBozza()"><i class="ti ti-pencil"></i> Salva bozza</button>
+        <button class="btn bpdf" onclick="generaFattura('pdf')"><i class="ti ti-file-type-pdf"></i> PDF fattura</button>
+        <button class="btn bxml" onclick="generaFattura('xml')"><i class="ti ti-file-type-xml"></i> XML FatturaPA</button>
+        <button class="btn bp" onclick="emettiEsporta()"><i class="ti ti-check"></i> Emetti e salva</button>
+      </div>
+    </div>
+    <div id="fatt-empty" style="color:var(--text2);font-size:13px;padding:14px 0;">Seleziona un cliente e un mese per visualizzare la fattura.</div>
+  </div>
+  <div id="tab-arch-fatt" style="display:none;">
+    <div class="topbar"><span class="ptitle">Archivio fatture</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="arch-fatt-cl" onchange="renderArchFatt()" style="width:auto;min-width:175px;padding:7px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:var(--font);"><option value="">Tutti i clienti</option></select>
+      <input type="month" id="arch-fatt-mese" onchange="renderArchFatt()" style="width:auto;padding:7px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:var(--font);">
+    </div>
+    <div id="arch-fatt-list"></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- XML Modal -->
+<div class="overlay" id="xov" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span style="font-size:14px;font-weight:700;"><i class="ti ti-file-type-xml" style="color:var(--purple);margin-right:5px;"></i><span id="xml-ttl">XML</span></span>
+      <button class="btn bdng bsm" onclick="document.getElementById('xov').classList.remove('open')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body"><pre class="xml-pre" id="xml-pre"></pre></div>
+    <div class="modal-ftr">
+      <button class="btn" onclick="document.getElementById('xov').classList.remove('open')">Chiudi</button>
+      <button class="btn bxml" onclick="dlXML()"><i class="ti ti-download"></i> Scarica</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATI CEDENTE — ROSETO CARBURANTI SNC
+// ══════════════════════════════════════════
+const CEDENTE = {
+  denominazione: 'Roseto Carburanti snc di Roscioli Lino & C.',
+  indirizzo:     'Via Nazionale 436',
+  cap:           '64026',
+  comune:        'Roseto degli Abruzzi',
+  provincia:     'TE',
+  nazione:       'IT',
+  piva:          '00838100675',
+  cf:            '00838100675',
+  sdi:           'M5UXCR1',
+  pec:           'rosetocarburantisnc@pec.it',
+  regime:        'RF01',      // ordinario
+  telefono:      '085.8942936',
+  email:         'linoroscioli@yahoo.it'
+};
+
+const IVA_PERC  = 22;
+const IVA_MULT  = 1 + IVA_PERC/100;  // 1.22
+const IVA_DIV   = IVA_PERC / 100;    // 0.22
+
+// ══════════════════════════════════════════
+//  DATABASE CLOUD — SUPABASE
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'https://rzjeecopqcwzgttpbkph.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Onuk82rWjKr6v-39V3lUuw_JBxeCjpL';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+let DB = { clienti:[], veicoli:[], ricevute:[], fatture:[], numProg:1, numFattProg:1 };
+let cloudReady = false;
+let realtimeChannel = null;
+let appStarting = false;
+let refreshTimer = null;
+
+function setCloudStatus(text, ok=true){
+  const el=$('cloud-status');
+  if(el){el.textContent=text;el.style.color=ok?'var(--green)':'var(--red)';}
+}
+
+async function loadCloudData(){
+  setCloudStatus('Sincronizzazione…',true);
+  const queries = [
+    ['customers', supabaseClient.from('customers').select('*').order('name')],
+    ['vehicles', supabaseClient.from('vehicles').select('*').order('plate')],
+    ['products', supabaseClient.from('products').select('*').order('name')],
+    ['receipts', supabaseClient.from('receipts').select('*').order('receipt_number')],
+    ['receipt_lines', supabaseClient.from('receipt_lines').select('*').order('created_at')],
+    ['invoices', supabaseClient.from('invoices').select('*').order('invoice_number')],
+    ['invoice_lines', supabaseClient.from('invoice_lines').select('*').order('created_at')]
+  ];
+  const results=[];
+  for(const [name,q] of queries){
+    const res=await q;
+    if(res.error){
+      console.error('Supabase load error:',name,res.error);
+      const e=new Error(name+' — '+(res.error.message||res.error.code||'errore database'));
+      e.details=res.error;
+      throw e;
+    }
+    results.push(res);
+  }
+  const [cRes,vRes,pRes,rRes,rlRes,iRes,ilRes]=results;
+
+  const productsById=Object.fromEntries((pRes.data||[]).map(p=>[p.id,p]));
+  const linesByReceipt={};
+  (rlRes.data||[]).forEach(l=>{
+    const p=productsById[l.product_id]||{};
+    const code=p.code;
+    const tipo=code==='GAS'?'gasolio':code==='BEN'?'benzina':code==='ADB'?'adblue':'accessori';
+    const item=tipo==='accessori'
+      ? {tipo,desc:l.notes||'',qty:Number(l.quantity)||1,euro:Number(l.line_total)||0}
+      : {tipo,litri:Number(l.quantity)||0,euro:Number(l.line_total)||0,pltUsato:Number(l.unit_price)||0};
+    (linesByReceipt[l.receipt_id] ||= []).push(item);
+  });
+
+  DB.clienti=(cRes.data||[]).map(c=>({
+    id:c.id,nome:c.name||'',piva:c.vat_number||'',coddest:c.sdi||'',pec:c.pec||'',
+    indirizzo:c.address||'',tel:c.phone||'',email:c.email||'',note:c.notes||''
+  }));
+  DB.veicoli=(vRes.data||[]).map(v=>({
+    id:v.id,targa:v.plate||'',clienteId:v.customer_id,tipo:v.vehicle_type||'Autocarro',
+    modello:v.model||'',anno:v.year||'',carb:v.fuel_type||'gasolio'
+  }));
+  DB.ricevute=(rRes.data||[]).map(r=>({
+    id:r.id,numero:Number(r.receipt_number),clienteId:r.customer_id,veicoloId:r.vehicle_id,
+    targa:String(r.vehicle_plate||((vRes.data||[]).find(v=>v.id===r.vehicle_id)?.plate)||'N/D'),km:r.km||'',firma:r.signature||'',
+    data:r.receipt_date,righe:linesByReceipt[r.id]||[],totale:Number(r.total)||0
+  }));
+  const linesByInvoice={};
+  (ilRes.data||[]).forEach(l=>(linesByInvoice[l.invoice_id] ||= []).push(l));
+  DB.fatture=(iRes.data||[]).map(f=>({
+    id:f.id,progressivo:Number(f.invoice_number),numero:String(f.invoice_number),data:f.invoice_date,
+    clienteId:f.customer_id,mese:f.invoice_date?String(f.invoice_date).slice(0,7):'',
+    nomeMese:f.invoice_date?(()=>{const [y,m]=String(f.invoice_date).slice(0,7).split('-');return mese2nome(Number(m))+' '+y})():'',
+    stato:f.status==='draft'?'bozza':(f.status==='cancelled'?'annullata':'emessa'),
+    righe:(linesByInvoice[f.id]||[]).map(l=>({
+      id:l.id,targa:'',veicoloId:null,ricevute:[],descrizione:l.description||'',
+      litri:Number(l.quantity)||0,prezzoIvato:Number(l.unit_price||0)*IVA_MULT,
+      importo:Number(l.line_total||0)*IVA_MULT,tipoCarb:'gasolio'
+    })),
+    totIvato:Number(f.total)||0,imponibile:Number(f.subtotal)||0,iva:Number(f.vat_amount)||0,note:f.notes||''
+  }));
+
+  const maxR=DB.ricevute.reduce((m,r)=>Math.max(m,Number(r.numero)||0),0);
+  const maxF=DB.fatture.reduce((m,f)=>Math.max(m,Number(f.progressivo)||0),0);
+  DB.numProg=maxR+1;
+  DB.numFattProg=maxF+1;
+  normalizzaDB();
+  cloudReady=true;
+  setCloudStatus('Dati sincronizzati',true);
+}
+
+function scheduleCloudRefresh(){
+  clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(async()=>{
+    try{
+      await loadCloudData();
+      if(document.querySelector('#view-clienti')?.style.display!=='none')renderClienti();
+      if(document.querySelector('#view-veicoli')?.style.display!=='none')renderVeicoli();
+      aggiornaSelettoriBuoni();
+      if(document.querySelector('#view-archivio')?.style.display!=='none'){initArchivio();renderArchivio();}
+      if(document.querySelector('#view-riepilogo')?.style.display!=='none'){initRiepilogo();aggiornaRiepilogo();}
+      if(document.querySelector('#view-fattura')?.style.display!=='none'){initFattura();renderArchFatt?.();}
+    }catch(e){console.error('Realtime refresh',e);setCloudStatus('Errore sincronizzazione',false);}
+  },350);
+}
+
+function startRealtime(){
+  if(realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+  realtimeChannel=supabaseClient.channel('roseto-carburanti-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'customers'},scheduleCloudRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'vehicles'},scheduleCloudRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'products'},scheduleCloudRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'receipts'},scheduleCloudRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'receipt_lines'},scheduleCloudRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'invoices'},scheduleCloudRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'invoice_lines'},scheduleCloudRefresh)
+    .subscribe((status)=>{if(status==='SUBSCRIBED')setCloudStatus('Sincronizzazione attiva',true);});
+}
+
+async function loginGestionale(){
+  const email=$('auth-email').value.trim();
+  const password=$('auth-password').value;
+  const err=$('auth-error'),loading=$('auth-loading'),btn=$('auth-login-btn');
+  err.style.display='none';
+  if(!email||!password){err.textContent='Inserisci email e password.';err.style.display='block';return;}
+  loading.style.display='block';btn.disabled=true;
+  const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+  loading.style.display='none';btn.disabled=false;
+  if(error){err.textContent='Accesso non riuscito. Controlla email e password.';err.style.display='block';console.error(error);return;}
+  localStorage.setItem('roseto_auth_email',email);
+  await enterApp();
+}
+
+async function enterApp(){
+  if(appStarting)return;
+  appStarting=true;
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session) return showLogin();
+    $('auth-gate').style.display='none';
+    await loadCloudData();
+    initUI();
+    startRealtime();
+    if(localStorage.getItem('roseto_sidebar_closed')!=='false')document.body.classList.add('sidebar-closed');
+  }catch(e){
+    console.error('bootstrap',e);
+    const msg=e?.message || e?.details?.message || e?.details?.hint || 'Errore sconosciuto';
+    $('auth-error').textContent='Errore Supabase: '+msg;
+    $('auth-error').style.display='block';
+    showLogin();
+  } finally {
+    appStarting=false;
+  }
+}
+
+function showLogin(){
+  $('auth-gate').style.display='flex';
+  const savedEmail=localStorage.getItem('roseto_auth_email');
+  if(savedEmail && !$('auth-email').value)$('auth-email').value=savedEmail;
+  $('auth-password').focus();
+  if(realtimeChannel){supabaseClient.removeChannel(realtimeChannel);realtimeChannel=null;}
+}
+
+async function logoutGestionale(){
+  await supabaseClient.auth.signOut();
+  cloudReady=false;
+  DB={clienti:[],veicoli:[],ricevute:[],fatture:[],numProg:1,numFattProg:1};
+  showLogin();
+  setCloudStatus('Non connesso',false);
+}
+
+async function esportaBackup(){
+  if(!cloudReady){toast('⚠ Database non sincronizzato',false);return;}
+  const payload={version:3,exportedAt:new Date().toISOString(),source:'supabase',data:DB};
+  const b=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='roseto_carburanti_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('✓ Backup esportato');
+}
+
+async function importaBackup(input){
+  const file=input.files?.[0];if(!file)return;
+  const rd=new FileReader();
+  rd.onload=async()=>{
+    try{
+      const p=JSON.parse(rd.result);const d=p?.data||p;
+      if(!d||!Array.isArray(d.clienti)||!Array.isArray(d.veicoli)||!Array.isArray(d.ricevute))throw new Error('Backup non valido');
+      if(!confirm('Importare il backup nel database centrale? I dati esistenti con gli stessi ID verranno aggiornati.'))return;
+      for(const c of d.clienti){
+        const {error}=await supabaseClient.from('customers').upsert({id:c.id,name:c.nome||'',vat_number:c.piva||null,sdi:c.coddest||null,pec:c.pec||null,address:c.indirizzo||null,phone:c.tel||null,email:c.email||null,notes:c.note||null},{onConflict:'id'});
+        if(error)throw error;
+      }
+      for(const v of d.veicoli){
+        const {error}=await supabaseClient.from('vehicles').upsert({id:v.id,customer_id:v.clienteId,plate:v.targa||'',vehicle_type:v.tipo||null,model:v.modello||null,year:v.anno?Number(v.anno):null,fuel_type:v.carb||null},{onConflict:'id'});
+        if(error)throw error;
+      }
+      await loadCloudData();aggiornaSelettoriBuoni();renderClienti();renderVeicoli();toast('✓ Backup importato nel database centrale');
+    }catch(e){toast('⚠ Backup non valido o importazione fallita',false);console.error(e);}
+    input.value='';
+  };rd.readAsText(file);
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+const {jsPDF} = window.jspdf||{};
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtD  = d => { if(!d)return''; const[y,m,g]=d.split('-'); return g+'/'+m+'/'+y; };
+const fmtE  = n => '€ '+parseFloat(n||0).toFixed(2).replace('.',',');
+const fmtN  = (n,dec=3) => parseFloat(n||0).toFixed(dec).replace('.',',');
+const mese2nome = m => ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'][m]||'';
+let _xmlContent='',_xmlFn='',_filterMode='mese',_fatturaRighe=[];
+let _veicoloEditId=null;
+let _editingClienteId=null;
+
+function toast(msg,ok=true){
+  const t=$('toast'); t.textContent=msg;
+  t.style.cssText=`background:${ok?'var(--green)':'var(--red)'};color:#fff;`;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════════
+//  PREZZO AL LITRO
+// ══════════════════════════════════════════
+function togglePlt(){
+  const on = $('plt-active').checked;
+  const fields=document.querySelector('.plt-fields');
+  if(fields) fields.style.opacity = on?'1':'0.4';
+  $('plt-note').textContent = on
+    ? '✓ Attivo — inserendo i litri calcola l\'importo automaticamente, e viceversa.'
+    : '✗ Disattivato — inserisci manualmente litri e importo indipendentemente.';
+}
+function getPlt(tipo){
+  if(!$('plt-active').checked) return 0;
+  return parseFloat($('plt-'+tipo)?.value)||0;
+}
+function calcDaLitri(tipo){
+  const lt=parseFloat($('litri-'+tipo)?.value)||0;
+  const p=getPlt(tipo);
+  if(p>0 && lt>0) $('euro-'+tipo).value=(lt*p).toFixed(2);
+  calcTot();
+}
+function calcDaEuro(tipo){
+  const eu=parseFloat($('euro-'+tipo)?.value)||0;
+  const p=getPlt(tipo);
+  if(p>0 && eu>0) $('litri-'+tipo).value=(eu/p).toFixed(3);
+  calcTot();
+}
+function ricalcolaRighe(){
+  ['gasolio','benzina'].forEach(t=>{
+    const lt=parseFloat($('litri-'+t)?.value)||0;
+    const p=getPlt(t);
+    if(p>0&&lt>0){ $('euro-'+t).value=(lt*p).toFixed(2); }
+  });
+  calcTot();
+}
+function calcTot(){
+  const t=['gasolio','benzina','adblue','accessori'].reduce((s,tp)=>s+(parseFloat($('euro-'+tp)?.value)||0),0);
+  $('r-tot').textContent=fmtE(t);
+}
+
+// ══════════════════════════════════════════
+//  4 BUONI TOUCH
+// ══════════════════════════════════════════
+const buonoState = [0,1,2,3].map(i=>({idx:i,savedId:null,busy:false}));
+function buonoId(i,s){return `${s}-${i}`;}
+function renderBuoni(){
+  const el=$('buoni-grid'); if(!el)return;
+  el.innerHTML=[0,1,2,3].map(i=>`
+    <section class="buono-card" id="buono-${i}">
+      <div class="buono-head">
+        <div class="buono-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C. · Via Nazionale 436 · Roseto degli Abruzzi · P.IVA 00838100675</small></div>
+        <div class="buono-num" id="b-num-${i}">N° —</div>
+      </div>
+      <div class="buono-client">
+        <label>Cliente</label>
+        <select class="touch-select" id="b-cliente-${i}" onchange="onBuonoClienteChange(${i})"><option value="">— Seleziona cliente —</option></select>
+      </div>
+      <div class="buono-grid2">
+        <div class="g"><label>Targa</label><input class="touch-input" type="text" id="b-targa-${i}" placeholder="Digita o seleziona targa" autocomplete="off" oninput="onBuonoTargaInput(${i})" onfocus="onBuonoTargaFocus(${i})" style="text-transform:uppercase"><div id="b-targhe-${i}" class="plate-suggestions"></div></div>
+        <div class="g"><label>Km</label><input class="touch-input" type="number" id="b-km-${i}" placeholder="Km"></div>
+      </div>
+      <div class="buono-righe">
+        <div class="buono-riga"><div class="prodotto">BENZINA SP.<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-benzina-${i}" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(${i},'benzina')"><input type="number" id="b-euro-benzina-${i}" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(${i},'benzina')"></div>
+        <div class="buono-riga"><div class="prodotto">GASOLIO<span class="sub">€/LT · LT</span></div><input type="number" id="b-litri-gasolio-${i}" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoDaLitri(${i},'gasolio')"><input type="number" id="b-euro-gasolio-${i}" placeholder="€" step="0.01" min="0" oninput="calcBuonoDaEuro(${i},'gasolio')"></div>
+        <div class="buono-riga"><div class="prodotto">ADBLUE<span class="sub">LT · €</span></div><input type="number" id="b-litri-adblue-${i}" placeholder="Litri" step="0.001" min="0" oninput="calcBuonoTot(${i})"><input type="number" id="b-euro-adblue-${i}" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(${i})"></div>
+        <div class="buono-riga acc"><div class="prodotto">ACCESSORI</div><input type="text" id="b-desc-accessori-${i}" placeholder="Descrizione"><input type="number" id="b-euro-accessori-${i}" placeholder="€" step="0.01" min="0" oninput="calcBuonoTot(${i})"></div>
+      </div>
+      <div class="buono-tot"><span>Totale buono</span><strong id="b-tot-${i}">€ 0,00</strong></div>
+      <div class="buono-grid2" style="margin-top:10px;margin-bottom:0;">
+        <div class="g"><label>Firma conducente</label><input class="touch-input" type="text" id="b-firma-${i}" list="b-conducenti-${i}" placeholder="Nome e cognome" autocomplete="off" oninput="salvaConducenteDigitato(this.value)"><datalist id="b-conducenti-${i}"></datalist></div>
+        <div class="g"><label>Data</label><input class="touch-input" type="date" id="b-data-${i}"></div>
+      </div>
+      <div class="buono-foot">
+        <button class="btn bgreen" onclick="salvaBuono(${i},true)"><i class="ti ti-device-floppy"></i><i class="ti ti-printer"></i> Salva e stampa 2 copie</button>
+      </div>
+      <div class="buono-status" id="b-status-${i}"></div>
+      <div class="buono-reset"><button onclick="resetBuono(${i})"><i class="ti ti-refresh"></i> Azzera buono</button></div>
+    </section>`).join('');
+  [0,1,2,3].forEach(i=>initBuono(i));
+  aggiornaSelettoriBuoni();
+}
+const DRIVER_STORAGE_KEY='roseto_conducenti';
+function getConducentiSalvati(){
+  try{return JSON.parse(localStorage.getItem(DRIVER_STORAGE_KEY)||'[]').filter(Boolean);}catch(e){return [];}
+}
+function salvaConducenteDigitato(value){
+  const nome=String(value||'').trim();
+  if(!nome)return;
+  const arr=getConducentiSalvati();
+  const key=nome.toLocaleLowerCase('it-IT');
+  if(!arr.some(x=>String(x).toLocaleLowerCase('it-IT')===key)){
+    arr.unshift(nome);
+    localStorage.setItem(DRIVER_STORAGE_KEY,JSON.stringify(arr.slice(0,100)));
+  }
+  aggiornaListaConducenti();
+}
+function aggiornaListaConducenti(){
+  const arr=getConducentiSalvati();
+  [0,1,2,3].forEach(i=>{
+    const dl=$('b-conducenti-'+i); if(!dl)return;
+    dl.innerHTML='';
+    arr.forEach(nome=>dl.appendChild(new Option(nome,nome)));
+  });
+}
+
+function initBuono(i){
+  popSel('b-cliente-'+i,'— Seleziona cliente —');
+  const dataEl=$('b-data-'+i); if(dataEl)dataEl.value=new Date().toISOString().slice(0,10);
+  aggiornaListaConducenti();
+  onBuonoClienteChange(i);
+}
+function onBuonoClienteChange(i){
+  const cId=$('b-cliente-'+i)?.value||'';
+  const input=$('b-targa-'+i);
+  const list=$('b-targhe-'+i);
+  if(!input||!list)return;
+  list.innerHTML='';
+  if(!cId){
+    input.placeholder='Prima seleziona cliente';
+    return;
+  }
+  input.placeholder='Digita o seleziona targa';
+  renderBuonoTargaSuggestions(i);
+}
+function renderBuonoTargaSuggestions(i){
+  const cId=$('b-cliente-'+i)?.value||'';
+  const input=$('b-targa-'+i);
+  const list=$('b-targhe-'+i);
+  if(!input||!list)return;
+  list.innerHTML='';
+  if(!cId)return;
+  const q=(input.value||'').trim().toUpperCase();
+  const vs=DB.veicoli
+    .filter(v=>v.clienteId===cId)
+    .filter(v=>!q || String(v.targa||'').toUpperCase().includes(q))
+    .slice(0,12);
+  if(!vs.length)return;
+  const box=document.createElement('div');
+  box.className='plate-suggestions-list';
+  vs.forEach(v=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='plate-suggestion';
+    b.textContent=v.targa+(v.modello?' — '+v.modello:'');
+    b.onclick=()=>{
+      input.value=String(v.targa||'').toUpperCase();
+      list.innerHTML='';
+      input.focus();
+    };
+    box.appendChild(b);
+  });
+  list.appendChild(box);
+}
+function onBuonoTargaFocus(i){
+  renderBuonoTargaSuggestions(i);
+}
+function onBuonoTargaInput(i){
+  const el=$('b-targa-'+i);
+  if(!el)return;
+  el.value=el.value.toUpperCase();
+  renderBuonoTargaSuggestions(i);
+}
+document.addEventListener('click',e=>{
+  document.querySelectorAll('.plate-suggestions').forEach(list=>{
+    const inputId=list.id.replace('b-targhe-','b-targa-');
+    const input=$(inputId);
+    if(input && !list.contains(e.target) && e.target!==input) list.innerHTML='';
+  });
+});
+
+function findBuonoVeicolo(i){
+  const cId=$('b-cliente-'+i)?.value||'';
+  const targa=($('b-targa-'+i)?.value||'').trim().toUpperCase();
+  return DB.veicoli.find(v=>v.clienteId===cId && String(v.targa||'').trim().toUpperCase()===targa) || null;
+}
+function getBuonoPlt(tipo){return $('plt-active').checked?(parseFloat($('plt-'+tipo)?.value)||0):0;}
+function calcBuonoDaLitri(i,tipo){const lt=parseFloat($(`b-litri-${tipo}-${i}`)?.value)||0,p=getBuonoPlt(tipo);if(p>0&&lt>0)$(`b-euro-${tipo}-${i}`).value=(lt*p).toFixed(2);calcBuonoTot(i);}
+function calcBuonoDaEuro(i,tipo){const eu=parseFloat($(`b-euro-${tipo}-${i}`)?.value)||0,p=getBuonoPlt(tipo);if(p>0&&eu>0)$(`b-litri-${tipo}-${i}`).value=(eu/p).toFixed(3);calcBuonoTot(i);}
+function calcBuonoTot(i){const t=['gasolio','benzina','adblue','accessori'].reduce((s,tp)=>s+(parseFloat($(`b-euro-${tp}-${i}`)?.value)||0),0);$(`b-tot-${i}`).textContent=fmtE(t);}
+function ricalcolaTuttiBuoni(){[0,1,2,3].forEach(i=>['gasolio','benzina'].forEach(t=>{const lt=parseFloat($(`b-litri-${t}-${i}`)?.value)||0,p=getBuonoPlt(t);if(p>0&&lt>0)$(`b-euro-${t}-${i}`).value=(lt*p).toFixed(2);calcBuonoTot(i);}));}
+function numVal(id){
+  const n=parseFloat($(id)?.value);
+  return Number.isFinite(n)&&n>=0?n:0;
+}
+function getBuonoRighe(i){
+  const out=[];
+  ['gasolio','benzina','adblue'].forEach(tipo=>{
+    const litri=numVal(`b-litri-${tipo}-${i}`),euro=numVal(`b-euro-${tipo}-${i}`);
+    if(litri>0||euro>0)out.push({tipo,litri,euro,pltUsato:getBuonoPlt(tipo)});
+  });
+  const desc=$(`b-desc-accessori-${i}`)?.value.trim()||'',euro=numVal(`b-euro-accessori-${i}`);
+  if(desc||euro>0)out.push({tipo:'accessori',desc,qty:1,euro});
+  return out;
+}
+function getBuonoData(i){
+  const clienteEl=$(`b-cliente-${i}`);
+  const targaEl=$(`b-targa-${i}`);
+  const dataEl=$(`b-data-${i}`);
+  const kmEl=$(`b-km-${i}`);
+  const firmaEl=$(`b-firma-${i}`);
+
+  if(!clienteEl||!targaEl||!dataEl||!kmEl||!firmaEl){
+    const missing=[
+      !clienteEl?'cliente':null,
+      !targaEl?'targa':null,
+      !dataEl?'data':null,
+      !kmEl?'km':null,
+      !firmaEl?'conducente':null
+    ].filter(Boolean).join(', ');
+    throw new Error('Campo del buono non trovato: '+missing);
+  }
+
+  const cId=clienteEl.value||'';
+  const targa=String(targaEl.value||'').trim().toUpperCase();
+  const data=dataEl.value||'';
+
+  if(!cId||!targa||!data){
+    toast('⚠ Completa cliente, targa e data',false);
+    return null;
+  }
+
+  const kmVal=String(kmEl.value||'').trim();
+  if(kmVal!=='' && (!Number.isFinite(Number(kmVal))||Number(kmVal)<0)){
+    toast('⚠ Inserisci un valore Km valido',false);
+    return null;
+  }
+
+  const righe=getBuonoRighe(i);
+  if(!righe.length){
+    toast('⚠ Inserisci almeno un rifornimento',false);
+    return null;
+  }
+
+  const totale=righe.reduce((s,r)=>s+(Number(r.euro)||0),0);
+  if(!(totale>0)){
+    toast('⚠ Il totale del buono deve essere maggiore di 0',false);
+    return null;
+  }
+
+  // La targa può essere inserita manualmente.
+  // Se esiste tra i veicoli del cliente, colleghiamo vehicle_id.
+  // Altrimenti vehicle_id resta NULL e salviamo comunque la targa nel buono.
+  const veicolo=findBuonoVeicolo(i);
+
+  return {
+    clienteId:cId,
+    veicoloId:veicolo?.id||null,
+    targa,
+    km:kmVal,
+    firma:String(firmaEl.value||'').trim(),
+    data,
+    righe,
+    totale
+  };
+}
+async function salvaBuono(i,stampa){
+  const st=buonoState[i];
+  if(st.busy)return;
+  st.busy=true;
+  const btn=document.querySelector(`#buono-${i} .buono-foot button`);
+  if(btn){btn.disabled=true;btn.style.opacity='.65';}
+
+  let receiptId=null;
+  try{
+    const d=getBuonoData(i); 
+    if(!d)return;
+    if(!cloudReady)throw new Error('Database non disponibile: attendi la sincronizzazione');
+
+    // Recupera gli ID prodotto direttamente dal database.
+    const codes={gasolio:'GAS',benzina:'BEN',adblue:'ADB',accessori:'ACC'};
+    const {data:products,error:pe}=await supabaseClient
+      .from('products')
+      .select('id,code')
+      .in('code',['GAS','BEN','ADB','ACC']);
+    if(pe)throw new Error('Prodotti: '+(pe.message||pe.code||'errore'));
+
+    const pmap=Object.fromEntries((products||[]).map(p=>[p.code,p.id]));
+    const missing=[...new Set(d.righe.map(r=>codes[r.tipo]).filter(code=>!pmap[code]))];
+    if(missing.length)throw new Error('Prodotti mancanti nel database: '+missing.join(', '));
+
+    const receiptPayload={
+      customer_id:d.clienteId,
+      vehicle_id:d.veicoloId,
+      vehicle_plate:d.targa,
+      receipt_date:d.data,
+      km:d.km===''?null:Number(d.km),
+      signature:d.firma||null,
+      status:'completed',
+      notes:null
+    };
+
+    let numero=0;
+    if(st.savedId){
+      const existing=DB.ricevute.find(x=>x.id===st.savedId);
+      if(!existing)st.savedId=null;
+    }
+
+    if(!st.savedId){
+      const {data:rec,error}=await supabaseClient
+        .from('receipts')
+        .insert(receiptPayload)
+        .select('*')
+        .single();
+      if(error)throw new Error('Buono: '+(error.message||error.code||'errore'));
+      receiptId=rec.id;
+      numero=Number(rec.receipt_number);
+
+      const rows=d.righe.map(rg=>({
+        receipt_id:receiptId,
+        product_id:pmap[codes[rg.tipo]],
+        quantity:rg.tipo==='accessori'?(Number(rg.qty)||1):(Number(rg.litri)||0),
+        unit_price:rg.tipo==='accessori'
+          ?(Number(rg.euro)||0)
+          :(Number(rg.pltUsato)||((Number(rg.litri)||0)>0?(Number(rg.euro)||0)/Number(rg.litri):0)),
+        notes:rg.tipo==='accessori'?(rg.desc||null):null
+      }));
+
+      const {error:le}=await supabaseClient.from('receipt_lines').insert(rows);
+      if(le){
+        // Rollback applicativo: se le righe falliscono, elimina il buono appena creato.
+        await supabaseClient.from('receipts').delete().eq('id',receiptId);
+        throw new Error('Righe rifornimento: '+(le.message||le.code||'errore'));
+      }
+      st.savedId=receiptId;
+    }else{
+      receiptId=st.savedId;
+      const {data:rec,error}=await supabaseClient
+        .from('receipts')
+        .update(receiptPayload)
+        .eq('id',receiptId)
+        .select('*')
+        .single();
+      if(error)throw new Error('Modifica buono: '+(error.message||error.code||'errore'));
+      numero=Number(rec.receipt_number);
+
+      const {error:de}=await supabaseClient.from('receipt_lines').delete().eq('receipt_id',receiptId);
+      if(de)throw new Error('Cancellazione righe precedenti: '+(de.message||de.code||'errore'));
+
+      const rows=d.righe.map(rg=>({
+        receipt_id:receiptId,
+        product_id:pmap[codes[rg.tipo]],
+        quantity:rg.tipo==='accessori'?(Number(rg.qty)||1):(Number(rg.litri)||0),
+        unit_price:rg.tipo==='accessori'
+          ?(Number(rg.euro)||0)
+          :(Number(rg.pltUsato)||((Number(rg.litri)||0)>0?(Number(rg.euro)||0)/Number(rg.litri):0)),
+        notes:rg.tipo==='accessori'?(rg.desc||null):null
+      }));
+      const {error:le}=await supabaseClient.from('receipt_lines').insert(rows);
+      if(le)throw new Error('Nuove righe rifornimento: '+(le.message||le.code||'errore'));
+    }
+
+    await loadCloudData();
+    const r=DB.ricevute.find(x=>x.id===receiptId);
+    st.savedId=receiptId;
+
+    $('b-num-'+i).textContent='N° '+String(r?.numero||numero).padStart(4,'0');
+    const n=r?.numero||numero;
+    $('b-status-'+i).textContent='✓ Salvato in archivio · N° '+String(n).padStart(4,'0');
+    $('b-status-'+i).className='buono-status saved';
+    $('num-display').textContent='Prossimo N° '+String(DB.numProg).padStart(4,'0');
+
+    salvaConducenteDigitato(d.firma);
+
+    if(stampa)stampaBuono2Copie(i,r);
+    else toast('✓ Buono N°'+n+' salvato in archivio');
+
+  }catch(e){
+    console.error('salvaBuono',e);
+    const msg=String(e?.message||e||'Errore sconosciuto');
+    toast('⚠ Salvataggio buono non riuscito: '+msg,false);
+    const status=$('b-status-'+i);
+    if(status){
+      status.textContent='⚠ '+msg;
+      status.className='buono-status';
+    }
+  }finally{
+    st.busy=false;
+    if(btn){btn.disabled=false;btn.style.opacity='';}
+  }
+}
+function resetBuono(i){
+  buonoState[i].savedId=null;
+  const cliente=$('b-cliente-'+i); if(cliente)cliente.value='';
+  const targa=$('b-targa-'+i); if(targa)targa.value='';
+  ['b-km-'+i,'b-litri-gasolio-'+i,'b-euro-gasolio-'+i,'b-litri-benzina-'+i,'b-euro-benzina-'+i,'b-litri-adblue-'+i,'b-euro-adblue-'+i,'b-desc-accessori-'+i,'b-euro-accessori-'+i,'b-firma-'+i].forEach(id=>{const el=$(id);if(el)el.value='';});
+  const list=$('b-targhe-'+i);if(list)list.innerHTML='';
+  const data=$('b-data-'+i); if(data)data.value=new Date().toISOString().slice(0,10);
+  const tot=$('b-tot-'+i); if(tot)tot.textContent=fmtE(0);
+  const num=$('b-num-'+i); if(num)num.textContent='N° —';
+  const status=$('b-status-'+i); if(status){status.textContent='';status.className='buono-status';}
+  onBuonoClienteChange(i);
+}
+function stampaArchivio2Copie(id){
+  const r=DB.ricevute.find(x=>x.id===id); if(!r){toast('⚠ Rifornimento non trovato',false);return;} const c=DB.clienti.find(x=>x.id===r.clienteId),v=DB.veicoli.find(x=>x.id===r.veicoloId);
+  const linee=r.righe.map(rg=>{
+    if(rg.tipo==='accessori')return `<div class="pc-line acc"><div class="pc-prod">ACCESSORI</div><div class="pc-detail">${esc(rg.desc||'')}</div><div class="pc-euro">${fmtE(rg.euro)}</div></div>`;
+    const p=rg.pltUsato?` · ${parseFloat(rg.pltUsato).toFixed(3)} €/lt`:'';
+    return `<div class="pc-line"><div class="pc-prod">${esc(rg.tipo).toUpperCase()}</div><div class="pc-detail">${rg.litri?parseFloat(rg.litri).toFixed(3)+' LT':''}${p}</div><div class="pc-euro">${fmtE(rg.euro)}</div></div>`;
+  }).join('');
+  const copy=()=>`<div class="print-copy"><div class="pc-head"><div class="pc-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C.<br>Via Nazionale 436, 64026 Roseto degli Abruzzi<br>P.IVA 00838100675 · Tel. 085 8942936</small></div><div class="pc-num">BUONO DI PRELIEVO<br>N° ${String(r.numero).padStart(4,'0')}</div></div><div class="pc-client"><div class="pc-label">Cliente</div><div class="pc-value">${esc(c?.nome||'')}</div></div><div class="pc-row"><div class="pc-box"><div class="pc-label">Targa</div><div class="pc-value">${esc(r.targa)}</div></div><div class="pc-box"><div class="pc-label">Km</div><div class="pc-value">${esc(r.km||'')}</div></div></div><div class="pc-table">${linee}</div><div class="pc-total"><span>TOTALE</span><span>${fmtE(r.totale)}</span></div><div class="pc-sign"><div class="pc-signline">Firma: ${esc(r.firma||'')}</div><div class="pc-signline">Data: ${esc(fmtD(r.data))}</div></div><div class="pc-note">La sottoscrizione del presente buono costituisce riconoscimento del debito e attesta il credito di Roseto Carburanti s.n.c. per l'importo ivi indicato.</div></div>`;
+  const area=document.createElement('div');area.id='print-area';area.innerHTML=copy()+copy();document.body.appendChild(area);
+  window.onafterprint=()=>{area.remove();window.onafterprint=null;};
+  window.print();toast('✓ Buono salvato e inviato alla stampante — 2 copie');
+}
+function stampaBuono2Copie(i,r){
+  const c=DB.clienti.find(x=>x.id===r.clienteId),v=DB.veicoli.find(x=>x.id===r.veicoloId);
+  const linee=r.righe.map(rg=>{
+    if(rg.tipo==='accessori')return `<div class="pc-line acc"><div class="pc-prod">ACCESSORI</div><div class="pc-detail">${esc(rg.desc||'')}</div><div class="pc-euro">${fmtE(rg.euro)}</div></div>`;
+    const p=rg.pltUsato?` · ${parseFloat(rg.pltUsato).toFixed(3)} €/lt`:'';
+    return `<div class="pc-line"><div class="pc-prod">${esc(rg.tipo).toUpperCase()}</div><div class="pc-detail">${rg.litri?parseFloat(rg.litri).toFixed(3)+' LT':''}${p}</div><div class="pc-euro">${fmtE(rg.euro)}</div></div>`;
+  }).join('');
+  const copy=()=>`<div class="print-copy"><div class="pc-head"><div class="pc-brand">ROSETO CARBURANTI s.n.c.<small>di Roscioli Lino & C.<br>Via Nazionale 436, 64026 Roseto degli Abruzzi<br>P.IVA 00838100675 · Tel. 085 8942936</small></div><div class="pc-num">BUONO DI PRELIEVO<br>N° ${String(r.numero).padStart(4,'0')}</div></div><div class="pc-client"><div class="pc-label">Cliente</div><div class="pc-value">${esc(c?.nome||'')}</div></div><div class="pc-row"><div class="pc-box"><div class="pc-label">Targa</div><div class="pc-value">${esc(r.targa)}</div></div><div class="pc-box"><div class="pc-label">Km</div><div class="pc-value">${esc(r.km||'')}</div></div></div><div class="pc-table">${linee}</div><div class="pc-total"><span>TOTALE</span><span>${fmtE(r.totale)}</span></div><div class="pc-sign"><div class="pc-signline">Firma: ${esc(r.firma||'')}</div><div class="pc-signline">Data: ${esc(fmtD(r.data))}</div></div><div class="pc-note">La sottoscrizione del presente buono costituisce riconoscimento del debito e attesta il credito di Roseto Carburanti s.n.c. per l'importo ivi indicato.</div></div>`;
+  const area=document.createElement('div');area.id='print-area';area.innerHTML=copy()+copy();document.body.appendChild(area);
+  window.onafterprint=()=>{area.remove();window.onafterprint=null;};
+  window.print();toast('✓ Buono salvato e inviato alla stampante — 2 copie');
+    // Svuota automaticamente il buono dopo Salva e stampa.
+    setTimeout(() => {
+      resetBuono(i);
+    }, 300);
+
+}
+
+
+// ══════════════════════════════════════════
+//  NAVIGAZIONE
+// ══════════════════════════════════════════
+function aggiornaSelettoriBuoni(){
+  [0,1,2,3].forEach(i=>{
+    const sel=$('b-cliente-'+i);
+    if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— Seleziona cliente —</option>';
+    DB.clienti.forEach(c=>sel.appendChild(new Option(c.nome,c.id)));
+    if(cur && DB.clienti.some(c=>c.id===cur)) sel.value=cur;
+    else if(!cur) sel.value='';
+    onBuonoClienteChange(i);
+  });
+}
+function toggleSidebar(){document.body.classList.toggle('sidebar-closed');localStorage.setItem('roseto_sidebar_closed',document.body.classList.contains('sidebar-closed'));}
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.ni').forEach(el=>el.classList.remove('active'));
+  $('view-'+v).style.display='block'; $('nav-'+v).classList.add('active');
+  if(v==='ricevuta') aggiornaSelettoriBuoni();
+  if(v==='archivio'){initArchivio();renderArchivio();}
+  if(v==='clienti')  renderClienti();
+  if(v==='veicoli')  renderVeicoli();
+  if(v==='riepilogo'){initRiepilogo();aggiornaRiepilogo();}
+  if(v==='fattura')  initFattura();
+}
+function showFattTab(id,btn){
+  document.querySelectorAll('#view-fattura [id^="tab-"]').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tsb').forEach(b=>b.classList.remove('active'));
+  $(id).style.display='block'; btn.classList.add('active');
+  if(id==='tab-arch-fatt'){initArchFatt();renderArchFatt();}
+}
+function toggleForm(id){ $(id).classList.toggle('open'); }
+
+function initUI(){
+  popSel('fat-cl','— Seleziona —');
+  ['filt-v-cl','arch-cl','f-cl','f-cl-r','arch-fatt-cl'].forEach(id=>popSel(id,'Tutti i clienti'));
+  popSel('v-cliente','— Seleziona cliente —');
+  popTarghe('f-targa','Tutte'); popTarghe('f-targa-r','Tutte');
+  $('num-display').textContent='Prossimo N° '+String(DB.numProg).padStart(4,'0');
+  togglePlt();
+  // Ricrea i 4 buoni con la struttura aggiornata (targa manuale + suggerimenti).
+  // La v18 lasciava nel DOM il vecchio markup con il select b-veicolo-* e
+  // per questo getBuonoData() non trovava b-targa-*.
+  renderBuoni();
+}
+
+// ══════════════════════════════════════════
+//  SELECTS
+// ══════════════════════════════════════════
+function popSel(id,lbl){
+  const s=$(id);if(!s)return;const cur=s.value;
+  s.innerHTML=`<option value="">${lbl}</option>`;
+  DB.clienti.forEach(c=>s.appendChild(new Option(c.nome,c.id)));
+  if(cur)s.value=cur;
+}
+function popTarghe(id,lbl){
+  const s=$(id);if(!s)return;const cur=s.value;
+  s.innerHTML=`<option value="">${lbl}</option>`;
+  [...new Set(DB.veicoli.map(v=>v.targa))].sort().forEach(t=>s.appendChild(new Option(t,t)));
+  if(cur)s.value=cur;
+}
+function onClienteChange(){
+  const cId=$('r-cliente').value; const sel=$('r-veicolo');
+  sel.innerHTML='<option value="">— Seleziona veicolo —</option>';
+  if(!cId){sel.innerHTML='<option value="">— Prima seleziona cliente —</option>';return;}
+  const vs=DB.veicoli.filter(v=>v.clienteId===cId);
+  if(!vs.length){sel.innerHTML='<option value="">Nessun veicolo registrato</option>';return;}
+  vs.forEach(v=>sel.appendChild(new Option(v.targa+(v.modello?' — '+v.modello:''),v.id)));
+}
+
+// ══════════════════════════════════════════
+//  RICEVUTE
+// ══════════════════════════════════════════
+function getRighe(){
+  const out=[];
+  ['gasolio','benzina','adblue'].forEach(tipo=>{
+    const litri=parseFloat($('litri-'+tipo)?.value)||0;
+    const euro=parseFloat($('euro-'+tipo)?.value)||0;
+    const plt=getPlt(tipo);
+    if(litri>0||euro>0) out.push({tipo,litri,euro,pltUsato:plt});
+  });
+  const desc=$('desc-accessori')?.value.trim()||'';
+  const qty=parseFloat($('qty-accessori')?.value)||0;
+  const euro=parseFloat($('euro-accessori')?.value)||0;
+  if(euro>0||desc) out.push({tipo:'accessori',desc,qty,euro});
+  return out;
+}
+function resetSpecchietto(){
+  ['gasolio','benzina','adblue'].forEach(t=>{$('litri-'+t).value='';$('euro-'+t).value='';});
+  $('desc-accessori').value='';$('qty-accessori').value='';$('euro-accessori').value='';
+  $('r-tot').textContent=fmtE(0);
+}
+async function salvaRicevuta(){
+  const cId=$('r-cliente').value,vId=$('r-veicolo').value,data=$('r-data').value;
+  if(!cId||!vId||!data){toast('⚠ Seleziona cliente, veicolo e data',false);return;}
+  const righe=getRighe();if(!righe.length){toast('⚠ Inserisci almeno un valore',false);return;}
+  const veicolo=DB.veicoli.find(x=>x.id===vId);if(!veicolo){toast('⚠ Veicolo non trovato',false);return;}
+  try{
+    const {data:rec,error}=await supabaseClient.from('receipts').insert({customer_id:cId,vehicle_id:vId,receipt_date:data,km:$('r-km').value?Number($('r-km').value):null,signature:$('r-firma').value.trim()||null,status:'completed'}).select().single();if(error)throw error;
+    const codes={gasolio:'GAS',benzina:'BEN',adblue:'ADB',accessori:'ACC'};const {data:products,error:pe}=await supabaseClient.from('products').select('id,code').in('code',Object.values(codes));if(pe)throw pe;const pmap=Object.fromEntries(products.map(p=>[p.code,p.id]));
+    const rows=righe.map(rg=>({receipt_id:rec.id,product_id:pmap[codes[rg.tipo]],quantity:rg.tipo==='accessori'?(Number(rg.qty)||1):(Number(rg.litri)||0),unit_price:rg.tipo==='accessori'?(Number(rg.euro)||0):(Number(rg.pltUsato)||((Number(rg.litri)||0)>0?(Number(rg.euro)||0)/Number(rg.litri):0)),notes:rg.tipo==='accessori'?(rg.desc||null):null}));
+    const {error:le}=await supabaseClient.from('receipt_lines').insert(rows);if(le){await supabaseClient.from('receipts').delete().eq('id',rec.id);throw le;}
+    await loadCloudData();toast('✓ Ricevuta N°'+rec.receipt_number+' salvata');resetForm();
+  }catch(e){console.error(e);toast('⚠ Salvataggio ricevuta non riuscito',false);}
+}
+function resetForm(){
+  $('r-cliente').value='';$('r-veicolo').innerHTML='<option value="">— Prima seleziona cliente —</option>';
+  $('r-km').value='';$('r-data').value=new Date().toISOString().slice(0,10);$('r-firma').value='';
+  resetSpecchietto();$('num-display').textContent='N° '+String(DB.numProg).padStart(4,'0');
+}
+
+// ══════════════════════════════════════════
+//  CLIENTI
+// ══════════════════════════════════════════
+async function salvaCliente(){
+  const nome=$('c-nome').value.trim();if(!nome){toast('⚠ Inserisci nome',false);return;}
+  const dati={nome,piva:$('c-piva').value.trim(),coddest:$('c-coddest').value.trim().toUpperCase(),pec:$('c-pec').value.trim(),indirizzo:$('c-indirizzo').value.trim(),tel:$('c-tel').value.trim(),email:$('c-email').value.trim(),note:$('c-note').value.trim()};
+  try{
+    if(_editingClienteId){
+      const {error}=await supabaseClient.from('customers').update({name:dati.nome,vat_number:dati.piva||null,sdi:dati.coddest||null,pec:dati.pec||null,address:dati.indirizzo||null,phone:dati.tel||null,email:dati.email||null,notes:dati.note||null}).eq('id',_editingClienteId);
+      if(error)throw error;toast('✓ Cliente modificato');
+    }else{
+      const {error}=await supabaseClient.from('customers').insert({name:dati.nome,vat_number:dati.piva||null,sdi:dati.coddest||null,pec:dati.pec||null,address:dati.indirizzo||null,phone:dati.tel||null,email:dati.email||null,notes:dati.note||null});
+      if(error)throw error;toast('✓ Cliente aggiunto');
+    }
+    await loadCloudData();
+    ['c-nome','c-piva','c-coddest','c-pec','c-indirizzo','c-tel','c-email','c-note'].forEach(id=>$(id).value='');
+    if($('adf-c').classList.contains('open'))toggleForm('adf-c');
+    ['fat-cl'].forEach(id=>popSel(id,'— Seleziona —'));
+    aggiornaSelettoriBuoni();
+    ['filt-v-cl','arch-cl','f-cl','f-cl-r','arch-fatt-cl'].forEach(id=>popSel(id,'Tutti i clienti'));
+    popSel('v-cliente','— Seleziona cliente —');
+    renderClienti();
+    annullaModificaCliente(true);
+  }catch(e){console.error('salvaCliente',e);toast('⚠ Salvataggio cliente non riuscito',false);}
+}
+function modificaCliente(id){
+  const c=DB.clienti.find(x=>x.id===id);if(!c)return;
+  _editingClienteId=id;
+  $('c-nome').value=c.nome||'';$('c-piva').value=c.piva||'';$('c-coddest').value=c.coddest||'';$('c-pec').value=c.pec||'';
+  $('c-indirizzo').value=c.indirizzo||'';$('c-tel').value=c.tel||'';$('c-email').value=c.email||'';$('c-note').value=c.note||'';
+  $('cliente-form-title').textContent='Modifica cliente';$('cliente-save-btn').innerHTML='<i class="ti ti-device-floppy"></i> Salva modifiche';
+  if(!$('adf-c').classList.contains('open'))toggleForm('adf-c');
+  $('c-nome').focus();
+}
+function annullaModificaCliente(silenzioso=false){
+  _editingClienteId=null;
+  ['c-nome','c-piva','c-coddest','c-pec','c-indirizzo','c-tel','c-email','c-note'].forEach(id=>$(id).value='');
+  $('cliente-form-title').textContent='Aggiungi cliente';$('cliente-save-btn').innerHTML='<i class="ti ti-check"></i> Salva';
+  if($('adf-c').classList.contains('open'))toggleForm('adf-c');
+  if(!silenzioso)renderClienti();
+}
+function renderClienti(){
+  const el=$('lista-clienti');
+  if(!DB.clienti.length){el.innerHTML='<div class="empty"><i class="ti ti-users"></i><div>Nessun cliente</div></div>';return;}
+  el.innerHTML=DB.clienti.map(c=>`<div class="ccard">
+    <div class="cname">${esc(c.nome)}</div>
+    <div class="cinfo"><b>P.IVA:</b> ${esc(c.piva||'—')}</div>
+    ${c.coddest?`<div class="cinfo"><b>SDI:</b> ${esc(c.coddest)}</div>`:''}
+    ${c.pec?`<div class="cinfo"><b>PEC:</b> ${esc(c.pec)}</div>`:''}
+    ${c.indirizzo?`<div class="cinfo">${esc(c.indirizzo)}</div>`:''}
+    <div class="ctags">
+      <span class="badge bg-a">${DB.veicoli.filter(v=>v.clienteId===c.id).length} veicoli</span>
+      <span class="badge bg-g">${DB.ricevute.filter(r=>r.clienteId===c.id).length} ricevute</span>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="btn bsm" onclick="modificaCliente('${c.id}')"><i class="ti ti-pencil"></i> Modifica</button></div>
+  </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  VEICOLI
+// ══════════════════════════════════════════
+async function salvaVeicolo(){
+  const targa=$('v-targa').value.trim().toUpperCase(),cId=$('v-cliente').value;
+  if(!targa||!cId){toast('⚠ Inserisci targa e cliente',false);return;}
+  const duplicata=DB.veicoli.find(v=>v.targa===targa && v.id!==_veicoloEditId);
+  if(duplicata){toast('⚠ Targa già presente',false);return;}
+  const dati={targa,clienteId:cId,tipo:$('v-tipo').value,modello:$('v-modello').value.trim(),anno:$('v-anno').value,carb:$('v-carb').value};
+  try{
+    if(_veicoloEditId){
+      const {error}=await supabaseClient.from('vehicles').update({customer_id:dati.clienteId,plate:dati.targa,vehicle_type:dati.tipo||null,model:dati.modello||null,year:dati.anno?Number(dati.anno):null,fuel_type:dati.carb||null}).eq('id',_veicoloEditId);if(error)throw error;toast('✓ Veicolo modificato');
+    }else{
+      const {error}=await supabaseClient.from('vehicles').insert({customer_id:dati.clienteId,plate:dati.targa,vehicle_type:dati.tipo||null,model:dati.modello||null,year:dati.anno?Number(dati.anno):null,fuel_type:dati.carb||null});if(error)throw error;toast('✓ Veicolo aggiunto');
+    }
+    await loadCloudData();
+    annullaModificaVeicolo(true);popTarghe('f-targa','Tutte');popTarghe('f-targa-r','Tutte');renderVeicoli();aggiornaSelettoriBuoni();
+  }catch(e){console.error('salvaVeicolo',e);toast('⚠ Salvataggio veicolo non riuscito',false);}
+}
+function modificaVeicolo(id){
+  const v=DB.veicoli.find(x=>x.id===id); if(!v)return;
+  _veicoloEditId=id;
+  $('v-targa').value=v.targa||'';
+  $('v-cliente').value=v.clienteId||'';
+  $('v-tipo').value=v.tipo||'Autocarro';
+  $('v-modello').value=v.modello||'';
+  $('v-anno').value=v.anno||'';
+  $('v-carb').value=v.carb||'gasolio';
+  $('veicolo-form-title').textContent='Modifica veicolo';
+  $('veicolo-save-btn').innerHTML='<i class="ti ti-check"></i> Salva modifiche';
+  $('adf-v').classList.add('open');
+  $('v-targa').focus();
+}
+function annullaModificaVeicolo(silent=false){
+  _veicoloEditId=null;
+  ['v-targa','v-modello','v-anno'].forEach(id=>$(id).value='');
+  $('v-cliente').value='';
+  $('v-tipo').value='Autocarro';
+  $('v-carb').value='gasolio';
+  $('veicolo-form-title').textContent='Aggiungi veicolo';
+  $('veicolo-save-btn').innerHTML='<i class="ti ti-check"></i> Salva';
+  $('adf-v').classList.remove('open');
+}
+function renderVeicoli(){
+  const cf=$('filt-v-cl')?.value||''; const el=$('lista-veicoli');
+  let vs=DB.veicoli;if(cf)vs=vs.filter(v=>v.clienteId===cf);
+  if(!vs.length){el.innerHTML='<div class="empty"><i class="ti ti-car"></i><div>Nessun veicolo</div></div>';return;}
+  el.innerHTML=vs.map(v=>{const c=DB.clienti.find(x=>x.id===v.clienteId);
+    return`<div class="vcard"><i class="ti ti-truck"></i>
+      <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;">${esc(v.targa)}</div>
+      <div style="font-size:11px;color:var(--text2);">${v.tipo||''}${v.modello?' · '+v.modello:''}</div>
+      <div style="font-size:11px;color:var(--text3);">${c?c.nome:''}</div></div>
+      <button class="btn bsm" onclick="modificaVeicolo('${v.id}')" title="Modifica veicolo"><i class="ti ti-pencil"></i></button>
+    </div>`;}).join('');
+}
+
+// ══════════════════════════════════════════
+//  ARCHIVIO RICEVUTE
+// ══════════════════════════════════════════
+function initArchivio(){
+  popSel('arch-cl','Tutti i clienti');
+  if(!$('arch-mese').value){const n=new Date();$('arch-mese').value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+}
+async function cancellaRifornimento(id){
+  const r=DB.ricevute.find(x=>x.id===id);
+  if(!r)return;
+  const numero=String(r.numero||0).padStart(4,'0');
+  const c=DB.clienti.find(x=>x.id===r.clienteId);
+  const ok=confirm(`Cancellare definitivamente il rifornimento N°${numero} del ${fmtD(r.data)}${c?' — '+c.nome:''}?\n\nL'operazione non può essere annullata.`);
+  if(!ok)return;
+  try{
+    if(!cloudReady){toast('⚠ Database non disponibile',false);return;}
+    const {error}=await supabaseClient.from('receipts').delete().eq('id',id);
+    if(error)throw error;
+    await loadCloudData();
+    aggiornaSelettoriBuoni();
+    renderArchivio();
+    if(document.querySelector('#view-riepilogo')?.style.display!=='none')aggiornaRiepilogo();
+    toast(`✓ Rifornimento N°${numero} cancellato`);
+  }catch(e){console.error('cancellaRifornimento',e);toast('⚠ Impossibile cancellare il rifornimento',false);}
+}
+
+function renderArchivio(){
+  const cf=$('arch-cl').value,mese=$('arch-mese').value;
+  let recs=[...DB.ricevute];
+  if(cf)recs=recs.filter(r=>r.clienteId===cf);
+  if(mese)recs=recs.filter(r=>r.data&&r.data.startsWith(mese));
+  recs.sort((a,b)=>b.data.localeCompare(a.data));
+  const el=$('archivio-list');
+  if(!recs.length){el.innerHTML='<div class="empty"><i class="ti ti-files"></i><div>Nessuna ricevuta trovata</div></div>';return;}
+  const cm={gasolio:'bg-g',benzina:'bg-b',adblue:'bg-a',accessori:'bg-x'};
+  el.innerHTML='<table class="dt"><thead><tr><th>N°</th><th>Data</th><th>Cliente</th><th>Targa</th><th>Km</th><th>Prodotti</th><th class="tdr">Totale</th><th></th></tr></thead><tbody>'+
+    recs.map(r=>{const c=DB.clienti.find(x=>x.id===r.clienteId);
+      const b=r.righe.map(rg=>`<span class="badge ${cm[rg.tipo]||'bg-g'}">${rg.tipo.toUpperCase()}</span>`).join(' ');
+      return`<tr><td><span class="numr">N°${String(r.numero||0).padStart(4,'0')}</span></td>
+        <td>${fmtD(r.data)}</td><td>${c?c.nome:'—'}</td>
+        <td style="font-weight:700;">${r.targa}</td>
+        <td>${r.km?parseInt(r.km).toLocaleString('it-IT')+' km':'—'}</td>
+        <td>${b}</td><td class="tdr" style="font-weight:700;">${fmtE(r.totale)}</td>
+        <td class="tdact">
+          <button class="btn bpdf bsm" onclick="pdfRicevuta('${r.id}')" title="PDF"><i class="ti ti-file-type-pdf"></i></button>
+          <button class="btn bsm" onclick="stampaArchivio2Copie('${r.id}')" title="Ristampa 2 copie">🖨️ 2 copie</button>
+          <button class="btn bdng bsm" onclick="cancellaRifornimento('${r.id}')" title="Cancella rifornimento"><i class="ti ti-trash"></i></button>
+        </td>
+      </tr>`;}).join('')+'</tbody></table>';
+}
+
+// ══════════════════════════════════════════
+//  RIEPILOGO
+// ══════════════════════════════════════════
+function setFilterMode(mode,btn){
+  _filterMode=mode;document.querySelectorAll('.fm').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  $('fg-mese').style.display=mode==='mese'?'grid':'none';
+  $('fg-range').style.display=mode==='range'?'grid':'none';
+  aggiornaRiepilogo();
+}
+function initRiepilogo(){
+  popSel('f-cl','Tutti i clienti');popSel('f-cl-r','Tutti i clienti');
+  popTarghe('f-targa','Tutte');popTarghe('f-targa-r','Tutte');
+  const n=new Date();
+  if(!$('f-mese').value)$('f-mese').value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
+  if(!$('f-dal').value) $('f-dal').value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-01';
+  if(!$('f-al').value)  $('f-al').value=n.toISOString().slice(0,10);
+}
+function getFiltratoRecs(){
+  let recs=[...DB.ricevute];
+  if(_filterMode==='mese'){
+    const mese=$('f-mese').value,cf=$('f-cl').value,tg=$('f-targa').value;
+    if(mese)recs=recs.filter(r=>r.data&&r.data.startsWith(mese));
+    if(cf)recs=recs.filter(r=>r.clienteId===cf);if(tg)recs=recs.filter(r=>r.targa===tg);
+  } else {
+    const dal=$('f-dal').value,al=$('f-al').value,cf=$('f-cl-r').value,tg=$('f-targa-r').value;
+    if(dal)recs=recs.filter(r=>r.data&&r.data>=dal);if(al)recs=recs.filter(r=>r.data&&r.data<=al);
+    if(cf)recs=recs.filter(r=>r.clienteId===cf);if(tg)recs=recs.filter(r=>r.targa===tg);
+  }
+  return recs;
+}
+function getPeriodoLabel(){
+  if(_filterMode==='mese'){const m=$('f-mese').value;if(!m)return'';const[y,mn]=m.split('-');return mese2nome(parseInt(mn))+' '+y;}
+  const dal=$('f-dal').value,al=$('f-al').value;return(dal?fmtD(dal):'?')+' → '+(al?fmtD(al):'?');
+}
+function aggiornaRiepilogo(){
+  const recs=getFiltratoRecs();
+  const totE=recs.reduce((s,r)=>s+(parseFloat(r.totale)||0),0);
+  const totL=recs.reduce((s,r)=>s+r.righe.reduce((ss,rg)=>ss+(parseFloat(rg.litri)||0),0),0);
+  const nC=new Set(recs.map(r=>r.clienteId)).size;
+  $('riepilogo-metrics').innerHTML=`
+    <div class="met"><div class="met-l">Ricevute</div><div class="met-v">${recs.length}</div></div>
+    <div class="met"><div class="met-l">Totale €</div><div class="met-v">€ ${totE.toFixed(2).replace('.',',')}</div></div>
+    <div class="met"><div class="met-l">Litri totali</div><div class="met-v">${totL.toFixed(0)} lt</div></div>
+    <div class="met"><div class="met-l">Clienti attivi</div><div class="met-v">${nC}</div></div>`;
+  const byC={};recs.forEach(r=>{if(!byC[r.clienteId])byC[r.clienteId]=[];byC[r.clienteId].push(r);});
+  const el=$('riepilogo-body');
+  if(!recs.length){el.innerHTML='<div class="empty"><i class="ti ti-calendar-off"></i><div>Nessun rifornimento trovato</div></div>';return;}
+  el.innerHTML=Object.entries(byC).map(([cId,crecs])=>{
+    const c=DB.clienti.find(x=>x.id===cId);
+    const tot=crecs.reduce((s,r)=>s+(parseFloat(r.totale)||0),0);
+    const lt=crecs.reduce((s,r)=>s+r.righe.reduce((ss,rg)=>ss+(parseFloat(rg.litri)||0),0),0);
+    const uid='u'+cId+Math.random().toString(36).slice(2,7);
+    const rows=crecs.sort((a,b)=>a.data.localeCompare(b.data)).map(r=>{
+      const rd=r.righe.map(rg=>rg.tipo==='accessori'?`Acc ${fmtE(rg.euro)}`:`${rg.tipo}:${rg.litri?parseFloat(rg.litri).toFixed(2)+'lt':''} ${fmtE(rg.euro)}`).join(' | ');
+      return`<tr><td>${fmtD(r.data)}</td><td style="font-weight:700;">${r.targa}</td>
+        <td>${r.km?parseInt(r.km).toLocaleString('it-IT')+' km':'—'}</td>
+        <td style="font-size:11px;color:var(--text2);">${rd}</td>
+        <td class="tdr" style="font-weight:700;">${fmtE(r.totale)}</td>
+        <td class="tdact"><button class="btn bpdf bsm" onclick="pdfRicevuta('${r.id}')" title="PDF"><i class="ti ti-file-type-pdf"></i></button> <button class="btn bdng bsm" onclick="cancellaRifornimento('${r.id}')" title="Cancella rifornimento"><i class="ti ti-trash"></i></button></td>
+      </tr>`;}).join('');
+    return`<div class="acc"><div class="acc-hdr" onclick="$('${uid}').classList.toggle('open')">
+      <span class="acc-name"><i class="ti ti-building" style="margin-right:5px;font-size:13px;"></i>${c?c.nome:'N/D'}</span>
+      <span class="acc-meta"><span>${crecs.length} ric.</span><span>${lt.toFixed(0)} lt</span><span style="font-weight:700;color:var(--text);">${fmtE(tot)}</span></span>
+    </div><div class="acc-body" id="${uid}">
+      <table class="dt"><thead><tr><th>Data</th><th>Targa</th><th>Km</th><th>Dettaglio</th><th class="tdr">Totale</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div>`;}).join('');
+}
+
+// ══════════════════════════════════════════
+//  PDF RICEVUTA
+// ══════════════════════════════════════════
+function pdfRicevuta(id){
+  const r=DB.ricevute.find(x=>x.id===id);if(!r||!jsPDF){toast('PDF non disponibile',false);return;}
+  const c=DB.clienti.find(x=>x.id===r.clienteId);
+  const v=DB.veicoli.find(x=>x.id===r.veicoloId);
+  const doc=new jsPDF({unit:'mm',format:'a5'});const W=148,mar=14;
+  doc.setFillColor(24,95,165);doc.rect(0,0,W,22,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(11);
+  doc.text('RICEVUTA DI RIFORNIMENTO',mar,9);
+  doc.setFont('helvetica','bold');doc.setFontSize(8);
+  doc.text(CEDENTE.denominazione,W-mar,9,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8);
+  doc.text('N° '+String(r.numero||0).padStart(4,'0')+'   '+fmtD(r.data),mar,16);
+  let y=26;
+  doc.setFillColor(240,244,250);doc.rect(mar,y,W-mar*2,15,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(100,100,100);doc.text('CLIENTE',mar+3,y+5);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(30,30,30);doc.text(c?c.nome:'—',mar+3,y+11);
+  if(c&&c.piva){doc.setFontSize(7);doc.setTextColor(120,120,120);doc.text('P.IVA: '+c.piva,W-mar,y+11,{align:'right'});}
+  y+=20;
+  function row(lab,val){doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(110,110,110);doc.text(lab,mar,y);doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(30,30,30);doc.text(String(val||'—'),mar+44,y);y+=6.5;}
+  doc.setDrawColor(200,210,225);doc.line(mar,y-2,W-mar,y-2);
+  row('TARGA',r.targa+(v&&v.modello?' — '+v.modello:''));
+  row('TIPO',v?v.tipo:'—');row('KM',r.km?parseInt(r.km).toLocaleString('it-IT')+' km':'—');row('CONDUCENTE',r.firma||'—');
+  y+=2;doc.setDrawColor(200,210,225);doc.line(mar,y,W-mar,y);y+=5;
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,30,30);doc.text('DETTAGLIO RIFORNIMENTO',mar,y);y+=5;
+  r.righe.forEach(rg=>{
+    const cols={gasolio:[15,110,86],benzina:[133,79,11],adblue:[24,95,165],accessori:[83,58,183]};
+    const[rr,gg,bb]=cols[rg.tipo]||[60,60,60];
+    doc.setFillColor(rr,gg,bb);doc.rect(mar,y,W-mar*2,5.5,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+    doc.text((rg.tipo||'').toUpperCase(),mar+2,y+3.8);doc.text(fmtE(rg.euro||0),W-mar,y+3.8,{align:'right'});
+    y+=9;doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(60,60,60);
+    if(rg.tipo!=='accessori'){
+      let det='';
+      if(rg.litri)det+='Litri: '+parseFloat(rg.litri).toFixed(3)+' lt';
+      if(rg.pltUsato&&rg.pltUsato>0)det+='   €/lt: '+parseFloat(rg.pltUsato).toFixed(3);
+      if(det)doc.text(det,mar+2,y);
+    } else {
+      if(rg.desc)doc.text('Desc: '+rg.desc,mar+2,y);if(rg.qty)doc.text('Qtà: '+rg.qty,mar+65,y);
+    }
+    y+=5.5;
+  });
+  y+=3;doc.setDrawColor(24,95,165);doc.setLineWidth(0.5);doc.line(mar,y,W-mar,y);y+=7;
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(24,95,165);
+  doc.text('TOTALE',mar,y);doc.text(fmtE(r.totale),W-mar,y,{align:'right'});
+  y+=11;doc.setLineWidth(0.3);doc.setDrawColor(180,180,180);
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(120,120,120);
+  doc.text('FIRMA CONDUCENTE',mar,y);y+=6;doc.line(mar,y,W/2-5,y);
+  y+=9;doc.setFontSize(6.5);doc.text(CEDENTE.denominazione+' — '+fmtD(r.data),mar,y);
+  doc.save('ricevuta_'+String(r.numero||0).padStart(4,'0')+'_'+r.targa+'.pdf');
+  toast('✓ PDF ricevuta generato');
+}
+
+// ══════════════════════════════════════════
+//  PDF RIEPILOGO
+// ══════════════════════════════════════════
+function stampaPDFRiepilogo(){
+  if(!jsPDF){toast('PDF non disponibile',false);return;}
+  const recs=getFiltratoRecs();if(!recs.length){toast('Nessun rifornimento trovato',false);return;}
+  const periodo=getPeriodoLabel();
+  const totE=recs.reduce((s,r)=>s+(parseFloat(r.totale)||0),0);
+  const totL=recs.reduce((s,r)=>s+r.righe.reduce((ss,rg)=>ss+(parseFloat(rg.litri)||0),0),0);
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,mar=16;let y=0;
+  doc.setFillColor(24,95,165);doc.rect(0,0,W,28,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);
+  doc.text('RIEPILOGO RIFORNIMENTI A CREDITO',mar,12);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text(CEDENTE.denominazione,mar,18);doc.text('Periodo: '+periodo,mar,24);y=36;
+  doc.setFillColor(240,244,250);doc.rect(mar,y,W-mar*2,18,'F');
+  const bw=(W-mar*2-12)/3;
+  [[String(recs.length),'RICEVUTE'],[totL.toFixed(0)+' lt','LITRI'],['€ '+totE.toFixed(2),'IMPORTO']].forEach(([val,lab],i)=>{
+    const bx=mar+(bw+6)*i;
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,100,100);doc.text(lab,bx+3,y+7);
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(24,95,165);doc.text(val,bx+3,y+15);});
+  y+=26;
+  const byC={};recs.forEach(r=>{if(!byC[r.clienteId])byC[r.clienteId]=[];byC[r.clienteId].push(r);});
+  Object.entries(byC).forEach(([cId,crecs])=>{
+    if(y>240){doc.addPage();y=20;}
+    const c=DB.clienti.find(x=>x.id===cId);const tot=crecs.reduce((s,r)=>s+(parseFloat(r.totale)||0),0);
+    doc.setFillColor(230,241,251);doc.rect(mar,y,W-mar*2,8,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(24,95,165);
+    doc.text(c?c.nome:'N/D',mar+3,y+5.5);doc.text(fmtE(tot),W-mar,y+5.5,{align:'right'});y+=12;
+    const cols=[18,24,22,18,60,22];let xc=mar;
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(100,100,100);
+    ['N°','Data','Targa','Km','Prodotti','Totale'].forEach((h,i)=>{doc.text(h,xc,y);xc+=cols[i];});
+    y+=3;doc.setDrawColor(180,180,180);doc.line(mar,y,W-mar,y);y+=4;
+    crecs.sort((a,b)=>a.data.localeCompare(b.data)).forEach(r=>{
+      if(y>275){doc.addPage();y=20;}
+      const rs=r.righe.map(rg=>rg.tipo==='accessori'?'Acc':rg.tipo.charAt(0).toUpperCase()+rg.tipo.slice(1,4)+(rg.litri?' '+parseFloat(rg.litri).toFixed(2)+'lt':'')).join(', ');
+      const vals=[String(r.numero||0).padStart(4,'0'),fmtD(r.data),r.targa,r.km?parseInt(r.km).toLocaleString('it-IT'):'—',rs,fmtE(r.totale)];
+      xc=mar;doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(30,30,30);
+      vals.forEach((v,i)=>{doc.text(v,xc,y,{maxWidth:cols[i]-2});xc+=cols[i];});y+=5;});y+=6;});
+  doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(150,150,150);
+  doc.text(CEDENTE.denominazione+' — Generato il '+new Date().toLocaleDateString('it-IT'),mar,288);
+  doc.save('riepilogo_'+periodo.replace(/[\s→]/g,'_').replace(/[^a-zA-Z0-9_]/g,'')+'.pdf');
+  toast('✓ PDF riepilogo generato');
+}
+
+// ══════════════════════════════════════════
+//  XML RIEPILOGO
+// ══════════════════════════════════════════
+function esportaXMLRiepilogo(){
+  const recs=getFiltratoRecs();if(!recs.length){toast('Nessun rifornimento trovato',false);return;}
+  const periodo=getPeriodoLabel();
+  const totE=recs.reduce((s,r)=>s+(parseFloat(r.totale)||0),0);
+  const totL=recs.reduce((s,r)=>s+r.righe.reduce((ss,rg)=>ss+(parseFloat(rg.litri)||0),0),0);
+  const byC={};recs.forEach(r=>{if(!byC[r.clienteId])byC[r.clienteId]=[];byC[r.clienteId].push(r);});
+  let xml=`<?xml version="1.0" encoding="UTF-8"?>\n<RiepilogoRifornimenti>\n  <Cedente>${esc(CEDENTE.denominazione)}</Cedente>\n  <Periodo>${esc(periodo)}</Periodo>\n  <DataGenerazione>${new Date().toISOString().slice(0,10)}</DataGenerazione>\n  <Totali><Ricevute>${recs.length}</Ricevute><Litri>${totL.toFixed(3)}</Litri><Importo valuta="EUR">${totE.toFixed(2)}</Importo></Totali>\n  <Clienti>\n`;
+  Object.entries(byC).forEach(([cId,crecs])=>{
+    const c=DB.clienti.find(x=>x.id===cId);const tot=crecs.reduce((s,r)=>s+(parseFloat(r.totale)||0),0);const lt=crecs.reduce((s,r)=>s+r.righe.reduce((ss,rg)=>ss+(parseFloat(rg.litri)||0),0),0);
+    xml+=`    <Cliente>\n      <RagioneSociale>${esc(c?c.nome:'N/D')}</RagioneSociale>\n`;
+    if(c&&c.piva)xml+=`      <PIVA>${esc(c.piva)}</PIVA>\n`;
+    xml+=`      <TotaleLitri>${lt.toFixed(3)}</TotaleLitri><TotaleImporto valuta="EUR">${tot.toFixed(2)}</TotaleImporto>\n      <Ricevute>\n`;
+    crecs.sort((a,b)=>a.data.localeCompare(b.data)).forEach(r=>{
+      xml+=`        <Ricevuta numero="${esc(String(r.numero||0).padStart(4,'0'))}" data="${esc(r.data)}">\n`;
+      xml+=`          <Targa>${esc(r.targa)}</Targa>\n`;
+      if(r.km)xml+=`          <Km>${esc(r.km)}</Km>\n`;
+      r.righe.forEach(rg=>{
+        if(rg.tipo==='accessori')xml+=`          <Accessorio desc="${esc(rg.desc||'')}" qty="${rg.qty||0}" importo="${parseFloat(rg.euro||0).toFixed(2)}"/>\n`;
+        else xml+=`          <Rifornimento tipo="${esc(rg.tipo)}" litri="${parseFloat(rg.litri||0).toFixed(3)}" importo="${parseFloat(rg.euro||0).toFixed(2)}"/>\n`;
+      });
+      xml+=`          <TotaleRicevuta>${parseFloat(r.totale||0).toFixed(2)}</TotaleRicevuta>\n        </Ricevuta>\n`;
+    });
+    xml+=`      </Ricevute>\n    </Cliente>\n`;
+  });
+  xml+=`  </Clienti>\n</RiepilogoRifornimenti>`;
+  showXML(xml,'XML Riepilogo — '+periodo,'riepilogo_'+periodo.replace(/[\s→]/g,'_').replace(/[^a-zA-Z0-9_]/g,'')+'.xml');
+}
+
+// ══════════════════════════════════════════
+//  FATTURAZIONE — righe editabili
+// ══════════════════════════════════════════
+function initFattura(){
+  popSel('fat-cl','— Seleziona cliente —');
+  const n=new Date();
+  if(!$('fat-mese').value)$('fat-mese').value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
+  if(!$('fat-data').value)$('fat-data').value=n.toISOString().slice(0,10);
+  if(!$('fat-numero').value)$('fat-numero').value=String(DB.numFattProg);
+  $('num-fatt-display').textContent='Fatt. N° '+DB.numFattProg;
+}
+function onFattClienteChange(){
+  const cId=$('fat-cl').value,mese=$('fat-mese').value;
+  if(!cId||!mese){$('fatt-preview').style.display='none';$('fatt-empty').style.display='block';$('fatt-empty').textContent='Seleziona un cliente e un mese per visualizzare la fattura.';return;}
+  const recs=DB.ricevute.filter(r=>r.clienteId===cId&&r.data&&r.data.startsWith(mese));
+  if(!recs.length){$('fatt-preview').style.display='none';$('fatt-empty').textContent='Nessuna ricevuta per questo cliente nel mese selezionato.';$('fatt-empty').style.display='block';return;}
+  $('fatt-empty').style.display='none';$('fatt-preview').style.display='block';
+  // Raggruppa per targa
+  const byT={};
+  recs.forEach(r=>{
+    if(!byT[r.targa])byT[r.targa]={targa:r.targa,veicoloId:r.veicoloId,ricevute:[],litri:0,tipi:new Set(),importoTotale:0};
+    byT[r.targa].ricevute.push(r);byT[r.targa].importoTotale+=parseFloat(r.totale)||0;
+    r.righe.forEach(rg=>{byT[r.targa].litri+=parseFloat(rg.litri)||0;if(rg.tipo!=='accessori')byT[r.targa].tipi.add(rg.tipo);});
+  });
+  // Costruisce righe con descrizione e valori calcolati (prezzi IVA inclusa)
+  _fatturaRighe=Object.values(byT).map((rg,i)=>{
+    const tipoCarb=[...rg.tipi][0]||'gasolio';
+    const descrCarb=tipoCarb==='benzina'?'BENZINA':'DIESEL';
+    const prezzoIvato=rg.litri>0?rg.importoTotale/rg.litri:0;
+    return{
+      id:'fr'+i,targa:rg.targa,veicoloId:rg.veicoloId,ricevute:rg.ricevute,
+      descrizione:`${descrCarb} PER AUTOTRAZIONE PER IL VS. AUTOMEZZO TARGATO ${rg.targa}`,
+      litri:rg.litri,prezzoIvato:prezzoIvato,importo:rg.importoTotale,
+      tipoCarb
+    };
+  });
+  renderFattRighe();
+}
+
+function renderFattRighe(){
+  const el=$('fatt-righe');
+  el.innerHTML=_fatturaRighe.map((rg,i)=>`
+    <div class="frig" style="margin-bottom:8px;">
+      <div class="frig-hdr">
+        <span class="frig-targa"><i class="ti ti-car" style="font-size:14px;margin-right:5px;"></i>${rg.targa}</span>
+        <span style="font-size:12px;color:var(--text2);">${rg.ricevute.length} ricevute — modifica i valori se necessario</span>
+      </div>
+      <table class="ftable">
+        <thead><tr>
+          <th style="width:45%;">Descrizione</th>
+          <th class="tdr" style="width:16%;">Q.tà (litri)</th>
+          <th class="tdr" style="width:16%;">Prezzo ivato €/lt</th>
+          <th class="tdr" style="width:16%;">Importo ivato €</th>
+          <th style="width:7%;"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><input type="text" id="fd-desc-${i}" value="${rg.descrizione}" style="width:100%;font-size:11px;"></td>
+            <td><input type="number" id="fd-litri-${i}" value="${rg.litri.toFixed(3)}" step="0.001" min="0" class="td-num" oninput="onFattRigaChange(${i})"></td>
+            <td><input type="number" id="fd-prico-${i}" value="${rg.prezzoIvato.toFixed(4)}" step="0.0001" min="0" class="td-num" oninput="onFattRigaChange(${i})"></td>
+            <td><input type="number" id="fd-imp-${i}" value="${rg.importo.toFixed(2)}" step="0.01" min="0" class="td-num" oninput="onFattImpChange(${i})"></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`).join('');
+  ricalcolaIVAFatt();
+}
+
+function onFattRigaChange(i){
+  const lt=parseFloat($('fd-litri-'+i)?.value)||0;
+  const p=parseFloat($('fd-prico-'+i)?.value)||0;
+  if(lt>0&&p>0){
+    const imp=(lt*p).toFixed(2);
+    $('fd-imp-'+i).value=imp;
+    _fatturaRighe[i].importo=parseFloat(imp);
+  }
+  _fatturaRighe[i].litri=lt;
+  _fatturaRighe[i].prezzoIvato=p;
+  ricalcolaIVAFatt();
+}
+function onFattImpChange(i){
+  const imp=parseFloat($('fd-imp-'+i)?.value)||0;
+  const lt=parseFloat($('fd-litri-'+i)?.value)||0;
+  _fatturaRighe[i].importo=imp;
+  if(lt>0){
+    const p=(imp/lt).toFixed(4);
+    $('fd-prico-'+i).value=p;
+    _fatturaRighe[i].prezzoIvato=parseFloat(p);
+  }
+  ricalcolaIVAFatt();
+}
+function ricalcolaIVAFatt(){
+  // prezzi IVA inclusa → imponibile = totale / 1.22
+  let totIvato=0;
+  _fatturaRighe.forEach((_,i)=>{totIvato+=parseFloat($('fd-imp-'+i)?.value)||0;});
+  const imponibile=totIvato/IVA_MULT;
+  const iva=totIvato-imponibile;
+  $('fat-imponibile').textContent=fmtE(imponibile);
+  $('fat-iva').textContent=fmtE(iva);
+  $('fat-totale').textContent=fmtE(totIvato);
+}
+
+function getCurrentFattRighe(){
+  return _fatturaRighe.map((_,i)=>({
+    ..._fatturaRighe[i],
+    descrizione:$('fd-desc-'+i)?.value||_fatturaRighe[i].descrizione,
+    litri:parseFloat($('fd-litri-'+i)?.value)||0,
+    prezzoIvato:parseFloat($('fd-prico-'+i)?.value)||0,
+    importo:parseFloat($('fd-imp-'+i)?.value)||0,
+  }));
+}
+
+function buildFattObj(stato){
+  const cId=$('fat-cl').value,mese=$('fat-mese').value;
+  if(!_fatturaRighe.length||!cId)return null;
+  const[anno,mNum]=mese.split('-');const nomeMese=mese2nome(parseInt(mNum))+' '+anno;
+  const righe=getCurrentFattRighe();
+  const totIvato=righe.reduce((s,r)=>s+r.importo,0);
+  const imponibile=totIvato/IVA_MULT;
+  const iva=totIvato-imponibile;
+  return{
+    id:'f'+Date.now(),progressivo:DB.numFattProg,
+    numero:$('fat-numero').value.trim()||String(DB.numFattProg),
+    data:$('fat-data').value,clienteId:cId,mese,nomeMese,
+    stato:stato||'bozza',righe,
+    totIvato,imponibile,iva,note:$('fat-note').value.trim()
+  };
+}
+async function salvaFatturaCloud(stato,esporta=false){
+  const f=buildFattObj(stato);if(!f){toast('⚠ Completa la selezione prima',false);return;}
+  try{
+    const dbStatus=stato==='bozza'?'draft':'issued';
+    const {data:inv,error}=await supabaseClient.from('invoices').insert({customer_id:f.clienteId,invoice_date:f.data,subtotal:f.imponibile,vat_amount:f.iva,total:f.totIvato,status:dbStatus,notes:f.note||null}).select().single();
+    if(error)throw error;
+    const rows=f.righe.map(r=>({invoice_id:inv.id,description:r.descrizione||'',quantity:Number(r.litri)||1,unit_price:(Number(r.prezzoIvato)||0)/IVA_MULT,vat_rate:IVA_PERC}));
+    const {error:le}=await supabaseClient.from('invoice_lines').insert(rows);if(le){await supabaseClient.from('invoices').delete().eq('id',inv.id);throw le;}
+    await loadCloudData();
+    const saved=DB.fatture.find(x=>x.id===inv.id)||f;saved.numero=String(inv.invoice_number);saved.progressivo=Number(inv.invoice_number);
+    if(esporta){pdfFattura(saved,true);esportaXMLFattura(saved);toast('✓ Fattura emessa — PDF e XML generati');}
+    else toast('✓ Bozza salvata');
+  }catch(e){console.error('salvaFatturaCloud',e);toast('⚠ Salvataggio fattura non riuscito',false);}
+}
+function salvaBozza(){salvaFatturaCloud('bozza',false);}
+function emettiEsporta(){salvaFatturaCloud('emessa',true);}
+function generaFattura(tipo){const f=buildFattObj('bozza');if(!f){toast('⚠ Completa la selezione prima',false);return;}if(tipo==='pdf')pdfFattura(f,true);else esportaXMLFattura(f);}
+
+// ══════════════════════════════════════════
+//  PDF FATTURA (come modello allegato)
+// ══════════════════════════════════════════
+function pdfFattura(f,download){
+  if(!jsPDF){toast('PDF non disponibile',false);return;}
+  const c=DB.clienti.find(x=>x.id===f.clienteId);
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,mar=18,marR=18;let y=10;
+
+  // Intestazione cedente
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(20,20,20);
+  doc.text(CEDENTE.denominazione,W/2,y,{align:'center'});y+=7;
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(60,60,60);
+  doc.text(CEDENTE.indirizzo+' - '+CEDENTE.cap+' '+CEDENTE.comune.toUpperCase()+' ('+CEDENTE.provincia+')',W/2,y,{align:'center'});y+=4.5;
+  doc.text('Tel. '+CEDENTE.telefono,W/2,y,{align:'center'});y+=4.5;
+  doc.text('e-mail: '+CEDENTE.email,W/2,y,{align:'center'});y+=4.5;
+  doc.text('C.F./P.Iva '+CEDENTE.piva,W/2,y,{align:'center'});y+=6;
+  doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);doc.line(mar,y,W-marR,y);y+=6;
+
+  // Nr. e data fattura (destra)
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(20,20,20);
+  doc.text('Fattura',W-marR-50,y,{align:'left'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('nr.',W-marR-22,y);
+  doc.setFillColor(240,240,240);doc.rect(W-marR-15,y-5,20,7,"F");
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text(f.numero,W-marR-5,y,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('del',W-marR+3,y);
+  doc.setFillColor(240,240,240);doc.rect(W-marR+9,y-5,22,7,"F");
+  doc.setFont('helvetica','bold');doc.text(fmtD(f.data),W-marR+30,y,{align:'right'});y+=8;
+
+  // Destinatario + Destinazione
+  const boxW=(W-mar-marR-6)/2;
+  // Box Destinatario
+  doc.setDrawColor(150,150,150);doc.setLineWidth(0.4);doc.rect(mar,y,boxW,30,"S");
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);doc.text('Destinatario',mar+2,y+5);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,20);
+  let dy=y+10;
+  if(c){
+    doc.text(c.nome,mar+3,dy);dy+=5;
+    if(c.indirizzo){doc.text(c.indirizzo,mar+3,dy);dy+=5;}
+    if(c.piva){doc.setFontSize(8);doc.setTextColor(60,60,60);doc.text('P.Iva '+c.piva,mar+3,dy);}
+  }
+  // Box Destinazione
+  const bx2=mar+boxW+6;
+  doc.setDrawColor(150,150,150);doc.rect(bx2,y,boxW,30,"S");
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);doc.text('Destinazione',bx2+2,y+5);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,20);
+  dy=y+10;
+  if(c){
+    doc.text(c.nome,bx2+3,dy);dy+=5;
+    if(c.indirizzo){doc.text(c.indirizzo,bx2+3,dy);dy+=5;}
+  }
+  y+=36;
+
+  // Tabella intestazione colonne
+  const colWidths=[10,75,20,22,14,22,10];// Cod,Descr,Qta,PrezzoIvato,Sconto,Importo,Iva
+  const colX=[mar];colWidths.forEach((w,i)=>colX.push((colX[i]||mar)+w));
+  doc.setFillColor(245,245,245);doc.rect(mar,y,W-mar-marR,7,'F');
+  doc.setDrawColor(150,150,150);doc.rect(mar,y,W-mar-marR,7,"S");
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(40,40,40);
+  ['Codice','Descrizione','Quantità','Prezzo ivato','Sconto','Importo','Iva'].forEach((h,i)=>{
+    doc.text(h,colX[i]+1,y+4.8);
+  });
+  y+=7;
+
+  // RIGA 1 — dicitura fissa (codice 01)
+  const descrizione1='SI RIMETTE FATTURA PER LA FORNITURA DI CARBURANTE EROGATO NEL MESE CORRENTE PER I/L VOSTRO/I AUTOMEZZO/I COME DA RIEPILOGO BUONI IN VS. POSSESSO';
+  doc.setDrawColor(200,200,200);doc.setLineWidth(0.2);
+  const rh1=14;
+  doc.rect(mar,y,W-mar-marR,rh1,"S");
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(20,20,20);
+  doc.text('01',colX[0]+1,y+5);
+  const lines1=doc.splitTextToSize(descrizione1,colWidths[1]-3);
+  lines1.forEach((l,li)=>doc.text(l,colX[1]+1,y+5+li*4));
+  y+=rh1;
+
+  // RIGHE TARGA (codice 02)
+  f.righe.forEach(rg=>{
+    if(y>245){doc.addPage();y=20;}
+    const rh=10;
+    doc.rect(mar,y,W-mar-marR,rh,"S");
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(20,20,20);
+    doc.text('02',colX[0]+1,y+6);
+    const descLines=doc.splitTextToSize(rg.descrizione,colWidths[1]-3);
+    descLines.forEach((l,li)=>doc.text(l,colX[1]+1,y+5+li*4));
+    // Quantita
+    doc.text(parseFloat(rg.litri||0).toFixed(3)+'l',colX[2]+colWidths[2]-1,y+6,{align:'right'});
+    // Prezzo ivato
+    doc.text('€ '+parseFloat(rg.prezzoIvato||0).toFixed(4),colX[3]+colWidths[3]-1,y+6,{align:'right'});
+    // Importo
+    doc.text('€ '+parseFloat(rg.importo||0).toFixed(2),colX[5]+colWidths[5]-1,y+6,{align:'right'});
+    // IVA %
+    doc.text(String(IVA_PERC),colX[6]+1,y+6);
+    y+=rh;
+  });
+
+  y+=6;
+  // Note legali
+  doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(100,100,100);
+  doc.text('Copia della fattura elettronica disponibile nella Sua area riservata dell\'Agenzia delle Entrate',mar,y);
+  y+=12;
+  doc.setDrawColor(150,150,150);doc.line(mar,y,W-marR,y);y+=5;
+
+  // Riepilogo IVA
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(20,20,20);
+  doc.text('Iva',mar,y);doc.text('Imponibile',mar+40,y);doc.text('Imposta',mar+90,y);y+=5;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.text(IVA_PERC+': Imponibile '+IVA_PERC+'%',mar,y);
+  doc.text('€ '+f.imponibile.toFixed(2),mar+40,y);
+  doc.text('€ '+f.iva.toFixed(2),mar+90,y);y+=8;
+  doc.setDrawColor(150,150,150);doc.line(mar,y,W-marR,y);y+=5;
+
+  // Pagamento + Totale documento
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('Pagamento:',mar,y);
+  doc.setFont('helvetica','normal');doc.text('Assegno',mar+28,y);y+=6;
+  doc.setFont('helvetica','bold');doc.text('Scadenze: '+fmtD(f.data),mar,y);
+  doc.text('€ '+f.totIvato.toFixed(2),mar+60,y);y+=10;
+
+  // Nota importo già considerato
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(20,20,20);
+  const nota='L\'IMPORTO DELLA PRESENTE FATTURA E\' STATO GIA\' CONSIDERATO E\' CONGLOBATO NEL TOTALE DEGLI INCASSI GIORNALIERI REGISTRATI';
+  const notaLines=doc.splitTextToSize(nota,100);
+  notaLines.forEach((l,li)=>doc.text(l,mar,y+li*4.5));
+
+  // Box totale documento
+  doc.setDrawColor(80,80,80);doc.setLineWidth(1);doc.rect(W-marR-60,y-2,60,16,"S");
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(20,20,20);
+  doc.text('Tot. documento',W-marR-57,y+5);
+  doc.setFontSize(13);doc.text('€ '+f.totIvato.toFixed(2),W-marR-3,y+12,{align:'right'});
+  y+=22;
+
+  // Footer legale
+  doc.setDrawColor(150,150,150);doc.setLineWidth(0.3);doc.line(mar,y,W-marR,y);y+=4;
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(100,100,100);
+  doc.text('Nel rispetto dalla normativa vigente, ivi incluso DL 196/03 e reg. UE 2016/679, informiamo che i Vs. dati saranno utilizzati ai soli fini connessi ai rapporti commerciali tra di noi in essere.',mar,y,{maxWidth:W-mar-marR});y+=4;
+  doc.text('Contributo CONAI assolto ove dovuto - Vi preghiamo di controllare i Vs. dati anagrafici, la P. IVA e il Cod. Fiscale. Non ci riteniamo responsabili di eventuali errori.',mar,y,{maxWidth:W-mar-marR});y+=5;
+  doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(60,60,60);
+  doc.text('Pag. '+doc.getCurrentPageInfo().pageNumber,mar,y);
+
+  if(download)doc.save('Fattura_'+f.numero+'_'+f.nomeMese.replace(/\s/g,'_')+'_'+c?.nome.replace(/\s/g,'_')+'.pdf');
+  toast('✓ PDF fattura generato');
+}
+
+// ══════════════════════════════════════════
+//  XML FATTURA — FORMATO FatturaPA (SDI)
+// ══════════════════════════════════════════
+function esportaXMLFattura(f){
+  const c=DB.clienti.find(x=>x.id===f.clienteId);
+  const progressivoInvio=String(f.progressivo||1).padStart(5,'0');
+  const codesdi=c?.coddest||'0000000';
+
+  // Estrai indirizzo cessionario
+  let cIndirizzo='',cCap='',cComune='',cProv='',cNazione='IT';
+  if(c&&c.indirizzo){
+    const parts=c.indirizzo.split(',').map(s=>s.trim());
+    cIndirizzo=parts[0]||'';
+    if(parts[1]){
+      const m=parts[1].match(/^(\d{5})\s+(.+?)\s*\((\w{2})\)/);
+      if(m){cCap=m[1];cComune=m[2];cProv=m[3];}
+      else{cComune=parts[1];}
+    }
+  }
+
+  let xml='<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml+=`<p:FatturaElettronica versione="FPA12"\n`;
+  xml+=`  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"\n`;
+  xml+=`  xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2"\n`;
+  xml+=`  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
+  xml+=`  xsi:schemaLocation="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2 http://www.fatturapa.gov.it/export/fatturazione/sdi/fatturapa/v1.2/Schema_del_file_xml_FatturaPA_versione_1.2.xsd">\n\n`;
+
+  // ── FatturaElettronicaHeader ──
+  xml+=`  <FatturaElettronicaHeader>\n\n`;
+
+  // DatiTrasmissione
+  xml+=`    <DatiTrasmissione>\n`;
+  xml+=`      <IdTrasmittente>\n`;
+  xml+=`        <IdPaese>IT</IdPaese>\n`;
+  xml+=`        <IdCodice>${esc(CEDENTE.piva)}</IdCodice>\n`;
+  xml+=`      </IdTrasmittente>\n`;
+  xml+=`      <ProgressivoInvio>${esc(progressivoInvio)}</ProgressivoInvio>\n`;
+  xml+=`      <FormatoTrasmissione>FPA12</FormatoTrasmissione>\n`;
+  xml+=`      <CodiceDestinatario>${esc(codesdi)}</CodiceDestinatario>\n`;
+  if(c&&c.pec)xml+=`      <PECDestinatario>${esc(c.pec)}</PECDestinatario>\n`;
+  xml+=`    </DatiTrasmissione>\n\n`;
+
+  // CedentePrestatore
+  xml+=`    <CedentePrestatore>\n`;
+  xml+=`      <DatiAnagrafici>\n`;
+  xml+=`        <IdFiscaleIVA>\n`;
+  xml+=`          <IdPaese>IT</IdPaese>\n`;
+  xml+=`          <IdCodice>${esc(CEDENTE.piva)}</IdCodice>\n`;
+  xml+=`        </IdFiscaleIVA>\n`;
+  xml+=`        <CodiceFiscale>${esc(CEDENTE.cf)}</CodiceFiscale>\n`;
+  xml+=`        <Anagrafica>\n`;
+  xml+=`          <Denominazione>${esc(CEDENTE.denominazione)}</Denominazione>\n`;
+  xml+=`        </Anagrafica>\n`;
+  xml+=`        <RegimeFiscale>${esc(CEDENTE.regime)}</RegimeFiscale>\n`;
+  xml+=`      </DatiAnagrafici>\n`;
+  xml+=`      <Sede>\n`;
+  xml+=`        <Indirizzo>${esc(CEDENTE.indirizzo)}</Indirizzo>\n`;
+  xml+=`        <CAP>${esc(CEDENTE.cap)}</CAP>\n`;
+  xml+=`        <Comune>${esc(CEDENTE.comune)}</Comune>\n`;
+  xml+=`        <Provincia>${esc(CEDENTE.provincia)}</Provincia>\n`;
+  xml+=`        <Nazione>${esc(CEDENTE.nazione)}</Nazione>\n`;
+  xml+=`      </Sede>\n`;
+  xml+=`      <Contatti>\n`;
+  xml+=`        <Telefono>${esc(CEDENTE.telefono)}</Telefono>\n`;
+  xml+=`        <Email>${esc(CEDENTE.email)}</Email>\n`;
+  xml+=`      </Contatti>\n`;
+  xml+=`    </CedentePrestatore>\n\n`;
+
+  // CessionarioCommittente
+  xml+=`    <CessionarioCommittente>\n`;
+  xml+=`      <DatiAnagrafici>\n`;
+  if(c&&c.piva){
+    xml+=`        <IdFiscaleIVA>\n`;
+    xml+=`          <IdPaese>IT</IdPaese>\n`;
+    xml+=`          <IdCodice>${esc(c.piva)}</IdCodice>\n`;
+    xml+=`        </IdFiscaleIVA>\n`;
+  }
+  xml+=`        <Anagrafica>\n`;
+  xml+=`          <Denominazione>${esc(c?c.nome:'N/D')}</Denominazione>\n`;
+  xml+=`        </Anagrafica>\n`;
+  xml+=`      </DatiAnagrafici>\n`;
+  xml+=`      <Sede>\n`;
+  xml+=`        <Indirizzo>${esc(cIndirizzo||c?.indirizzo||'ND')}</Indirizzo>\n`;
+  xml+=`        <CAP>${esc(cCap||'00000')}</CAP>\n`;
+  xml+=`        <Comune>${esc(cComune||'ND')}</Comune>\n`;
+  if(cProv)xml+=`        <Provincia>${esc(cProv)}</Provincia>\n`;
+  xml+=`        <Nazione>${esc(cNazione)}</Nazione>\n`;
+  xml+=`      </Sede>\n`;
+  xml+=`    </CessionarioCommittente>\n\n`;
+
+  xml+=`  </FatturaElettronicaHeader>\n\n`;
+
+  // ── FatturaElettronicaBody ──
+  xml+=`  <FatturaElettronicaBody>\n\n`;
+
+  // DatiGenerali
+  xml+=`    <DatiGenerali>\n`;
+  xml+=`      <DatiGeneraliDocumento>\n`;
+  xml+=`        <TipoDocumento>TD01</TipoDocumento>\n`;
+  xml+=`        <Divisa>EUR</Divisa>\n`;
+  xml+=`        <Data>${esc(f.data)}</Data>\n`;
+  xml+=`        <Numero>${esc(f.numero)}</Numero>\n`;
+  xml+=`        <ImportoTotaleDocumento>${f.totIvato.toFixed(2)}</ImportoTotaleDocumento>\n`;
+  if(f.note)xml+=`        <Causale>${esc(f.note)}</Causale>\n`;
+  xml+=`      </DatiGeneraliDocumento>\n`;
+  xml+=`    </DatiGenerali>\n\n`;
+
+  // DatiBeniServizi
+  xml+=`    <DatiBeniServizi>\n`;
+
+  // Linea 1 — descrizione generica (senza importo)
+  xml+=`      <DettaglioLinee>\n`;
+  xml+=`        <NumeroLinea>1</NumeroLinea>\n`;
+  xml+=`        <Descrizione>SI RIMETTE FATTURA PER LA FORNITURA DI CARBURANTE EROGATO NEL MESE CORRENTE PER I/L VOSTRO/I AUTOMEZZO/I COME DA RIEPILOGO BUONI IN VS. POSSESSO</Descrizione>\n`;
+  xml+=`        <Quantita>1.00</Quantita>\n`;
+  xml+=`        <PrezzoUnitario>0.00</PrezzoUnitario>\n`;
+  xml+=`        <PrezzoTotale>0.00</PrezzoTotale>\n`;
+  xml+=`        <AliquotaIVA>${IVA_PERC}.00</AliquotaIVA>\n`;
+  xml+=`      </DettaglioLinee>\n`;
+
+  // Righe targa
+  f.righe.forEach((rg,i)=>{
+    // I prezzi in FatturaPA devono essere IMPONIBILI (IVA esclusa)
+    const importoImponibile=(rg.importo/IVA_MULT);
+    const prezzoUnitImponibile=rg.litri>0?(importoImponibile/rg.litri):0;
+    xml+=`      <DettaglioLinee>\n`;
+    xml+=`        <NumeroLinea>${i+2}</NumeroLinea>\n`;
+    xml+=`        <Descrizione>${esc(rg.descrizione)}</Descrizione>\n`;
+    xml+=`        <Quantita>${parseFloat(rg.litri||0).toFixed(3)}</Quantita>\n`;
+    xml+=`        <UnitaMisura>LT</UnitaMisura>\n`;
+    xml+=`        <PrezzoUnitario>${prezzoUnitImponibile.toFixed(4)}</PrezzoUnitario>\n`;
+    xml+=`        <PrezzoTotale>${importoImponibile.toFixed(2)}</PrezzoTotale>\n`;
+    xml+=`        <AliquotaIVA>${IVA_PERC}.00</AliquotaIVA>\n`;
+    xml+=`      </DettaglioLinee>\n`;
+  });
+
+  // DatiRiepilogo
+  xml+=`      <DatiRiepilogo>\n`;
+  xml+=`        <AliquotaIVA>${IVA_PERC}.00</AliquotaIVA>\n`;
+  xml+=`        <ImponibileImporto>${f.imponibile.toFixed(2)}</ImponibileImporto>\n`;
+  xml+=`        <Imposta>${f.iva.toFixed(2)}</Imposta>\n`;
+  xml+=`        <EsigibilitaIVA>I</EsigibilitaIVA>\n`;
+  xml+=`      </DatiRiepilogo>\n`;
+  xml+=`    </DatiBeniServizi>\n\n`;
+
+  // DatiPagamento
+  xml+=`    <DatiPagamento>\n`;
+  xml+=`      <CondizioniPagamento>TP02</CondizioniPagamento>\n`;
+  xml+=`      <DettaglioPagamento>\n`;
+  xml+=`        <ModalitaPagamento>MP02</ModalitaPagamento>\n`;// MP02 = assegno
+  xml+=`        <DataScadenzaPagamento>${esc(f.data)}</DataScadenzaPagamento>\n`;
+  xml+=`        <ImportoPagamento>${f.totIvato.toFixed(2)}</ImportoPagamento>\n`;
+  xml+=`      </DettaglioPagamento>\n`;
+  xml+=`    </DatiPagamento>\n\n`;
+
+  xml+=`  </FatturaElettronicaBody>\n\n`;
+  xml+=`</p:FatturaElettronica>`;
+
+  // Nome file SDI: IT + PIVA + _ + ProgressivoInvio + .xml
+  const nomeFile='IT'+CEDENTE.piva+'_'+progressivoInvio+'.xml';
+  showXML(xml,'FatturaPA — N° '+f.numero+' — '+f.nomeMese,nomeFile);
+}
+
+// ══════════════════════════════════════════
+//  ARCHIVIO FATTURE
+// ══════════════════════════════════════════
+function initArchFatt(){
+  popSel('arch-fatt-cl','Tutti i clienti');
+  if(!$('arch-fatt-mese').value){const n=new Date();$('arch-fatt-mese').value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+}
+function renderArchFatt(){
+  const cf=$('arch-fatt-cl').value,mese=$('arch-fatt-mese').value;
+  let ff=[...DB.fatture];if(cf)ff=ff.filter(f=>f.clienteId===cf);if(mese)ff=ff.filter(f=>f.mese===mese);
+  ff.sort((a,b)=>b.data.localeCompare(a.data));
+  const el=$('arch-fatt-list');
+  if(!ff.length){el.innerHTML='<div class="empty"><i class="ti ti-receipt-2"></i><div>Nessuna fattura trovata</div></div>';return;}
+  el.innerHTML='<table class="dt"><thead><tr><th>N°</th><th>Data</th><th>Cliente</th><th>Periodo</th><th>Targhe</th><th>Stato</th><th class="tdr">Tot. ivato</th><th></th></tr></thead><tbody>'+
+    ff.map(f=>{const c=DB.clienti.find(x=>x.id===f.clienteId);
+      return`<tr>
+        <td><span class="numr">${f.numero}</span></td>
+        <td>${fmtD(f.data)}</td><td>${c?c.nome:'—'}</td><td>${f.nomeMese}</td>
+        <td>${f.righe.length}</td>
+        <td><span class="badge ${f.stato==='emessa'?'bg-em':'bg-bz'}">${f.stato.toUpperCase()}</span></td>
+        <td class="tdr" style="font-weight:700;color:var(--blue);">${fmtE(f.totIvato)}</td>
+        <td class="tdact">
+          <button class="btn bpdf bsm" onclick="pdfFattura(DB.fatture.find(x=>x.id==='${f.id}'),true)"><i class="ti ti-file-type-pdf"></i></button>
+          <button class="btn bxml bsm" onclick="esportaXMLFattura(DB.fatture.find(x=>x.id==='${f.id}'))"><i class="ti ti-file-type-xml"></i></button>
+        </td>
+      </tr>`;}).join('')+'</tbody></table>';
+}
+
+function showXML(xml,title,fn){_xmlContent=xml;_xmlFn=fn;$('xml-ttl').textContent=title;$('xml-pre').textContent=xml;$('xov').classList.add('open');}
+function dlXML(){if(!_xmlContent)return;const b=new Blob([_xmlContent],{type:'application/xml;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=_xmlFn;a.click();URL.revokeObjectURL(a.href);toast('✓ XML scaricato');}
+
+// ══════════════════════════════════════════
+//  INIT / INTEGRITÀ DATI
+// ══════════════════════════════════════════
+function normalizzaDB(){
+  if(!DB||typeof DB!=='object')DB={};
+  DB.clienti=Array.isArray(DB.clienti)?DB.clienti:[];
+  DB.veicoli=Array.isArray(DB.veicoli)?DB.veicoli:[];
+  DB.ricevute=Array.isArray(DB.ricevute)?DB.ricevute:[];
+  DB.fatture=Array.isArray(DB.fatture)?DB.fatture:[];
+  DB.numProg=Math.max(1,Number(DB.numProg)||1);
+  DB.numFattProg=Math.max(1,Number(DB.numFattProg)||1);
+  // ripara numerazioni mancanti senza modificare quelle esistenti
+  const maxR=DB.ricevute.reduce((m,r)=>Math.max(m,Number(r.numero)||0),0);
+  if(DB.numProg<=maxR)DB.numProg=maxR+1;
+  const seen=new Set();
+  DB.clienti=DB.clienti.filter(c=>c&&c.id&&c.nome);
+  DB.veicoli=DB.veicoli.filter(v=>v&&v.id&&v.targa&&v.clienteId&&DB.clienti.some(c=>c.id===v.clienteId));
+  DB.ricevute=DB.ricevute.filter(r=>r&&r.id&&r.clienteId&&r.veicoloId&&Array.isArray(r.righe));
+  DB.ricevute.forEach(r=>{if(seen.has(r.id))r.id='r'+Date.now()+'_'+Math.random().toString(36).slice(2);seen.add(r.id);});
+}
+normalizzaDB();
+supabaseClient.auth.onAuthStateChange((event, session)=>{
+  if(event==='SIGNED_OUT'){showLogin();return;}
+  if(event==='SIGNED_IN' && session){enterApp();}
+});
+enterApp();
+</script>
+
+<script id="price-persistence-v22">
+(function(){
+  const PRICE_KEYS = [
+    'dashboard_price_gasolio','dashboard_price_benzina',
+    'price_gasolio','price_benzina',
+    'gasolio_price','benzina_price'
+  ];
+  function findPriceInput(kind){
+    const candidates = kind === 'gasolio'
+      ? ['gasolio','diesel','prezzo-gasolio','price-gasolio','p-gasolio']
+      : ['benzina','petrol','prezzo-benzina','price-benzina','p-benzina'];
+    for(const id of candidates){
+      const el=document.getElementById(id);
+      if(el && ('value' in el)) return el;
+    }
+    const all=[...document.querySelectorAll('input')];
+    return all.find(el=>{
+      const s=((el.id||'')+' '+(el.name||'')+' '+(el.placeholder||'')).toLowerCase();
+      return candidates.some(x=>s.includes(x));
+    }) || null;
+  }
+  function keyFor(kind){
+    return kind==='gasolio' ? 'roseto_dashboard_price_gasolio' : 'roseto_dashboard_price_benzina';
+  }
+  function restore(){
+    ['gasolio','benzina'].forEach(kind=>{
+      const el=findPriceInput(kind);
+      if(!el) return;
+      const saved=localStorage.getItem(keyFor(kind));
+      if(saved!==null && saved!=='') el.value=saved;
+      if(!el.dataset.v22PriceBound){
+        el.dataset.v22PriceBound='1';
+        el.addEventListener('input',()=>localStorage.setItem(keyFor(kind),el.value));
+        el.addEventListener('change',()=>localStorage.setItem(keyFor(kind),el.value));
+        if(el.form) el.form.addEventListener('submit',()=>localStorage.setItem(keyFor(kind),el.value));
+      }
+    });
+  }
+  window.addEventListener('DOMContentLoaded', restore);
+  setTimeout(restore,500);
+  setTimeout(restore,1500);
+  window.rosetoRestorePricesV22=restore;
+})();
+</script>
+
+
+</body>
+</html>
